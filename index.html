@@ -358,7 +358,7 @@
       alert("رقم الطاولة فارغ أو مستخدم مسبقاً");
       return;
     }
-    const names = namesRaw ? namesRaw.split(",").map((n) => n.trim()).filter(Boolean) : [];
+    const names = namesRaw ? namesRaw.split(".").map((n) => n.trim()).filter(Boolean) : [];
     currentData[num] = names;
     numInput.value = "";
     namesInput.value = "";
