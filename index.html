@@ -14,55 +14,7 @@
     min-height: 100vh;
   }
 
-  /* ===== شاشة تسجيل الدخول ===== */
-  #login-overlay {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg,#efe6d8,#f7f2ea);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-  }
-  .login-box {
-    background: #fff;
-    padding: 35px 30px;
-    border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    width: 100%;
-    max-width: 340px;
-    text-align: center;
-  }
-  .login-box h2 { margin-top: 0; color: #333; }
-  .login-box input {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    margin-bottom: 12px;
-  }
-  .login-box button {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    background: #b08d57;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .login-box button:hover { background: #96794a; }
-  #login-error {
-    color: #c0392b;
-    font-size: 14px;
-    margin-top: 8px;
-    display: none;
-  }
-
-  /* ===== التطبيق الرئيسي ===== */
-  #app { display: none; max-width: 1200px; margin: 0 auto; }
+  #app { max-width: 1200px; margin: 0 auto; }
 
   header {
     display: flex;
@@ -71,15 +23,20 @@
     margin-bottom: 20px;
   }
   header h1 { font-size: 22px; margin: 0; flex: 1; text-align: center; color: #333; }
-  header button {
+  #lock-btn {
     background: #b08d57;
     color: #fff;
     border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+  #lock-btn.unlocked { background: #4a8c4a; }
 
   input, textarea {
     padding: 12px;
@@ -166,30 +123,21 @@
     background: #4a8c4a; color: #fff; border: none; border-radius: 8px;
     padding: 0 18px; cursor: pointer; font-size: 15px;
   }
-  #save-status { font-size: 13px; color: #4a8c4a; margin-right: 10px; }
+  #save-status { font-size: 13px; color: #4a8c4a; margin-left: 8px; }
 </style>
 </head>
 <body>
 
-  <div id="login-overlay">
-    <div class="login-box">
-      <h2>🔒 تسجيل الدخول</h2>
-      <input type="password" id="password-input" placeholder="كلمة السر" />
-      <button onclick="checkLogin()">دخول</button>
-      <div id="login-error">كلمة السر غير صحيحة</div>
-    </div>
-  </div>
-
   <div id="app">
     <header>
-      <button onclick="logout()">تسجيل الخروج</button>
+      <button id="lock-btn" onclick="toggleLock()">🔒</button>
       <h1>🔎 البحث عن المعازيم</h1>
       <span id="save-status"></span>
     </header>
 
     <input type="text" id="search" placeholder="اكتب الاسم هنا..." />
 
-    <div class="admin-panel">
+    <div id="admin-panel" class="admin-panel" style="display:none;">
       <h3>➕ إضافة طاولة جديدة</h3>
       <div class="row">
         <input type="text" id="new-table-num" placeholder="رقم الطاولة" />
@@ -206,7 +154,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-  // === كلمة السر: غيّرها من هون ===
+  // === كلمة سر الإدارة (فتح صلاحية الإضافة/الحذف) ===
   const ADMIN_PASSWORD = "2412";
 
   // === إعدادات Firebase ===
@@ -247,34 +195,48 @@
   };
 
   let currentData = {};
-  let unsubscribe = null;
+  let isUnlocked = false;
   const resultsDiv = document.getElementById("results");
   const searchInput = document.getElementById("search");
   const statusEl = document.getElementById("save-status");
+  const lockBtn = document.getElementById("lock-btn");
+  const adminPanel = document.getElementById("admin-panel");
 
-  function checkLogin() {
-    const val = document.getElementById("password-input").value;
+  function toggleLock() {
+    if (isUnlocked) {
+      // قفل بدون كلمة سر
+      isUnlocked = false;
+      updateLockUI();
+      renderTables(searchInput.value.trim() || null);
+      return;
+    }
+    const val = prompt("أدخل كلمة السر للفتح:");
+    if (val === null) return; // ألغى المستخدم
     if (val === ADMIN_PASSWORD) {
-      document.getElementById("login-overlay").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      startListening();
+      isUnlocked = true;
+      updateLockUI();
+      renderTables(searchInput.value.trim() || null);
     } else {
-      document.getElementById("login-error").style.display = "block";
+      alert("كلمة السر غير صحيحة");
     }
   }
 
-  function logout() {
-    if (unsubscribe) unsubscribe();
-    document.getElementById("app").style.display = "none";
-    document.getElementById("password-input").value = "";
-    document.getElementById("login-error").style.display = "none";
-    document.getElementById("login-overlay").style.display = "flex";
+  function updateLockUI() {
+    if (isUnlocked) {
+      lockBtn.textContent = "🔓";
+      lockBtn.classList.add("unlocked");
+      adminPanel.style.display = "block";
+    } else {
+      lockBtn.textContent = "🔒";
+      lockBtn.classList.remove("unlocked");
+      adminPanel.style.display = "none";
+    }
   }
 
   // بث حي: أي تعديل من أي جهاز بينعكس فوراً عند الكل
   function startListening() {
     statusEl.textContent = "جارِ الاتصال...";
-    unsubscribe = docRef.onSnapshot(async (snap) => {
+    docRef.onSnapshot(async (snap) => {
       if (snap.exists && snap.data().tables) {
         currentData = snap.data().tables;
         statusEl.textContent = "";
@@ -323,19 +285,29 @@
       const listHtml = names
         .map((n) => {
           const isMatch = filter && n.includes(filter);
-          return `<li>${isMatch ? `<span class="highlight">${n}</span>` : `<span>${n}</span>`}<span class="del-guest" onclick="deleteGuest('${table}', '${n.replace(/'/g, "\\'")}')">✕</span></li>`;
+          const nameSpan = isMatch ? `<span class="highlight">${n}</span>` : `<span>${n}</span>`;
+          const delBtn = isUnlocked
+            ? `<span class="del-guest" onclick="deleteGuest('${table}', '${n.replace(/'/g, "\\'")}')">✕</span>`
+            : "";
+          return `<li>${nameSpan}${delBtn}</li>`;
         })
         .join("");
 
+      const delTableBtn = isUnlocked
+        ? `<span class="del-table" onclick="deleteTable('${table}')">حذف الطاولة</span>`
+        : "";
+
+      const addGuestRow = isUnlocked
+        ? `<div class="add-guest-row">
+             <input type="text" id="add-guest-${table}" placeholder="اسم معزوم جديد" />
+             <button onclick="addGuest('${table}')">إضافة</button>
+           </div>`
+        : "";
+
       card.innerHTML = `
-        <h3>الطاولة رقم ${table}
-          <span class="del-table" onclick="deleteTable('${table}')">حذف الطاولة</span>
-        </h3>
+        <h3>الطاولة رقم ${table}${delTableBtn}</h3>
         <ul>${listHtml}</ul>
-        <div class="add-guest-row">
-          <input type="text" id="add-guest-${table}" placeholder="اسم معزوم جديد" />
-          <button onclick="addGuest('${table}')">إضافة</button>
-        </div>
+        ${addGuestRow}
       `;
       resultsDiv.appendChild(card);
     });
@@ -384,9 +356,8 @@
     await saveData();
   }
 
-  document.getElementById("password-input").addEventListener("keyup", function (e) {
-    if (e.key === "Enter") checkLogin();
-  });
+  // بدء التطبيق مباشرة بدون شاشة دخول
+  startListening();
 </script>
 </body>
 </html>
