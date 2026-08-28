@@ -283,9 +283,10 @@
       card.className = "card";
 
       const listHtml = names
-        .map((n) => {
+        .map((n, idx) => {
           const isMatch = filter && n.includes(filter);
-          const nameSpan = isMatch ? `<span class="highlight">${n}</span>` : `<span>${n}</span>`;
+          const labeled = `${idx + 1}. ${n}`;
+          const nameSpan = isMatch ? `<span class="highlight">${labeled}</span>` : `<span>${labeled}</span>`;
           const delBtn = isUnlocked
             ? `<span class="del-guest" onclick="deleteGuest('${table}', '${n.replace(/'/g, "\\'")}')">✕</span>`
             : "";
