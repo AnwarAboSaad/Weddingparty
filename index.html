@@ -153,11 +153,11 @@
   }
   #dj-box {
     position: absolute;
-    left: 50%;
-    top: 8%;
+    left: 10%;
+    top: 50%;
     transform: translate(-50%, -50%);
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
     background: #222;
     color: #fff;
     border-radius: 10px;
@@ -165,59 +165,59 @@
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 15px;
+    font-size: 14px;
     z-index: 3;
   }
   #dance-floor {
     position: absolute;
-    left: 50%;
-    top: 45%;
-    transform: translate(-50%, -50%);
-    width: 44%;
-    aspect-ratio: 1 / 1;
+    left: 18%;
+    top: 50%;
+    transform: translate(0, -50%);
+    width: 120px;
+    height: 240px;
     border: 2px dashed #b08d57;
-    border-radius: 50%;
+    border-radius: 0 999px 999px 0;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #b08d57;
-    font-size: 13px;
+    font-size: 12px;
     text-align: center;
     z-index: 1;
   }
-  .table-square {
+  .table-bar {
     position: absolute;
-    transform: translate(-50%, -50%);
-    border-radius: 10px;
+    border-radius: 8px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
     cursor: pointer;
-    padding: 4px;
     z-index: 2;
-    line-height: 1.25;
     overflow: hidden;
   }
-  .table-square.assigned {
+  .table-bar .bar-inner {
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .table-bar.assigned {
     background: #b08d57;
     color: #fff;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
-  .table-square.empty {
+  .table-bar.empty {
     background: #f7f2ea;
     border: 2px dashed #ccc;
     color: #999;
-    font-size: 11px;
+    font-size: 16px;
   }
-  .table-square .count-badge {
-    font-size: 10px;
+  .table-bar .count-badge {
+    font-size: 9px;
     font-weight: normal;
     opacity: 0.9;
-    margin-top: 2px;
+    display: block;
   }
   #seating-hint {
     text-align: center;
@@ -635,51 +635,66 @@
   /* ---------- صفحة خريطة الطاولات ---------- */
   function renderSeating() {
     // إزالة المربعات القديمة فقط (نبقي DJ وساحة الرقص)
-    floorPlan.querySelectorAll(".table-square").forEach((el) => el.remove());
+    floorPlan.querySelectorAll(".table-bar").forEach((el) => el.remove());
 
     const keys = sortedTableKeys();
-    const squaresCount = keys.length;
-    if (squaresCount === 0) return;
+    const barsCount = keys.length;
 
-    // مين معيّن مسبقاً (عشان ما نكرر نفس الطاولة بأكثر من مربع)
-    const assignedElsewhere = new Set(Object.values(seatingAssignments));
+    // مركز الدوران (يسار الحاوية، عند حافة ساحة الرقص) بالبكسل الحقيقي
+    const w = floorPlan.clientWidth;
+    const h = floorPlan.clientHeight;
+    const cx = w * 0.18;
+    const cy = h * 0.5;
+    const r0 = Math.min(w, h) * 0.30; // نصف قطر ساحة الرقص (نقطة انطلاق الطاولات)
 
-    const angleStart = -75; // درجات
-    const angleEnd = 255;
-    const radius = 40; // % نسبة لمركز الدائرة
+    // إعادة رسم DJ وساحة الرقص بنفس المركز
+    djBox.style.left = Math.max(30, cx - r0 * 0.75) + "px";
+    djBox.style.top = cy + "px";
+    danceFloor.style.left = cx + "px";
+    danceFloor.style.top = cy + "px";
+    danceFloor.style.width = r0 + "px";
+    danceFloor.style.height = (2 * r0) + "px";
 
-    for (let i = 0; i < squaresCount; i++) {
-      const t = squaresCount > 1 ? i / (squaresCount - 1) : 0.5;
+    if (barsCount === 0) return;
+
+    const angleStart = -80; // درجات (فوق)
+    const angleEnd = 80;    // درجات (تحت)
+    const thickness = 34;   // عرض ثابت للمستطيل
+    const gap = 8;          // مسافة بين ساحة الرقص وأول الطاولة
+
+    for (let i = 0; i < barsCount; i++) {
+      const t = barsCount > 1 ? i / (barsCount - 1) : 0.5;
       const angleDeg = angleStart + t * (angleEnd - angleStart);
       const angleRad = (angleDeg * Math.PI) / 180;
-      const x = 50 + radius * Math.cos(angleRad);
-      const y = 45 + radius * Math.sin(angleRad);
 
       const assignedTable = seatingAssignments[i];
       const isAssigned = assignedTable && currentData[assignedTable];
+      const count = isAssigned ? currentData[assignedTable].length : 0;
 
-      const sq = document.createElement("div");
-      sq.className = "table-square " + (isAssigned ? "assigned" : "empty");
-      sq.style.left = x + "%";
-      sq.style.top = y + "%";
+      let length = isAssigned ? Math.min(50 + count * 6, 170) : 50;
 
-      let size = 62;
-      if (isAssigned) {
-        const count = currentData[assignedTable].length;
-        size = Math.min(60 + count * 5, 130);
-      }
-      sq.style.width = size + "px";
-      sq.style.height = size + "px";
+      const midRadius = r0 + gap + length / 2;
+      const x = cx + midRadius * Math.cos(angleRad);
+      const y = cy + midRadius * Math.sin(angleRad);
 
-      if (isAssigned) {
-        const count = currentData[assignedTable].length;
-        sq.innerHTML = `<div>${assignedTable}</div><div class="count-badge">${count} شخص</div>`;
-      } else {
-        sq.innerHTML = `<div>+ اضغط<br/>لتحديد</div>`;
-      }
+      const bar = document.createElement("div");
+      bar.className = "table-bar " + (isAssigned ? "assigned" : "empty");
+      bar.style.left = x + "px";
+      bar.style.top = y + "px";
+      bar.style.width = length + "px";
+      bar.style.height = thickness + "px";
+      bar.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
 
-      sq.onclick = () => openTablePicker(i);
-      floorPlan.appendChild(sq);
+      const inner = document.createElement("div");
+      inner.className = "bar-inner";
+      inner.style.transform = `rotate(${-angleDeg}deg)`;
+      inner.innerHTML = isAssigned
+        ? `${assignedTable}<span class="count-badge">${count} شخص</span>`
+        : `+`;
+      bar.appendChild(inner);
+
+      bar.onclick = () => openTablePicker(i);
+      floorPlan.appendChild(bar);
     }
   }
 
@@ -737,6 +752,10 @@
 
   // بدء التطبيق
   startListening();
+
+  window.addEventListener("resize", () => {
+    if (currentView === "seating") renderSeating();
+  });
 </script>
 </body>
 </html>
