@@ -166,41 +166,23 @@
     margin-bottom: 16px;
     touch-action: none;
   }
-  #dance-floor {
+  #floor-svg {
     position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translate(0, -50%);
-    width: 38%;
-    height: 76%;
-    border: 2px dashed #b08d57;
-    border-radius: 0 999px 999px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .floor-label {
+    position: absolute;
     color: #b08d57;
     font-size: 13px;
     text-align: center;
     z-index: 1;
     pointer-events: none;
-  }
-  #aisle {
-    position: absolute;
-    left: 38%;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 32%;
-    height: 64px;
-    border-top: 2px dashed #b08d57;
-    border-bottom: 2px dashed #b08d57;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #b08d57;
-    font-size: 12px;
-    text-align: center;
-    z-index: 1;
-    pointer-events: none;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
   }
   .dev-credit {
     text-align: center;
@@ -338,8 +320,9 @@
         <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
       </div>
       <div id="floor-plan">
-        <div id="dance-floor">ساحة<br/>الرقص</div>
-        <div id="aisle">ممر العروسين</div>
+        <svg id="floor-svg"></svg>
+        <div id="dance-label" class="floor-label">ساحة<br/>الرقص</div>
+        <div id="aisle-label" class="floor-label">ممر العروسين</div>
       </div>
     </div>
   </div>
@@ -409,7 +392,9 @@
   const seatingToolbar = document.getElementById("seating-toolbar");
   const chartBtn = document.getElementById("chart-btn");
   const floorPlan = document.getElementById("floor-plan");
-  const danceFloor = document.getElementById("dance-floor");
+  const floorSvg = document.getElementById("floor-svg");
+  const danceLabel = document.getElementById("dance-label");
+  const aisleLabel = document.getElementById("aisle-label");
   const modalOverlay = document.getElementById("modal-overlay");
   const modalBox = document.getElementById("modal-box");
 
@@ -470,9 +455,42 @@
     if (currentView === "search") {
       renderTables(searchInput.value.trim() || null);
     } else {
+      drawFloorPlan();
       renderPlacements();
     }
   }
+
+  // يرسم شكل ساحة الرقص + ممر العروسين كخط واحد متواصل (بدون خط فاصل بينهم)
+  function drawFloorPlan() {
+    const w = floorPlan.clientWidth;
+    const h = floorPlan.clientHeight;
+    if (!w || !h) return;
+
+    floorSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    floorSvg.setAttribute("width", w);
+    floorSvg.setAttribute("height", h);
+
+    const margin = 16;
+    const R = Math.min(w, h) * 0.32; // نصف قطر الساحة = نص سماكة الممر (أرفع)
+    const capX = margin + R;
+    const centerY = h / 2;
+    const topY = centerY - R;
+    const bottomY = centerY + R;
+    const aisleRightX = w - margin; // الممر يمتد لأقصى اليمين
+
+    const d = `M ${aisleRightX} ${topY} L ${capX} ${topY} A ${R} ${R} 0 0 0 ${capX} ${bottomY} L ${aisleRightX} ${bottomY}`;
+    floorSvg.innerHTML = `<path d="${d}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none" />`;
+
+    danceLabel.style.left = (capX - R * 0.45) + "px";
+    danceLabel.style.top = centerY + "px";
+
+    aisleLabel.style.left = ((capX + aisleRightX) / 2) + "px";
+    aisleLabel.style.top = centerY + "px";
+  }
+
+  window.addEventListener("resize", () => {
+    if (currentView === "seating") drawFloorPlan();
+  });
 
   /* ---------- تحميل بيانات الطاولات (بث حي) ---------- */
   function startListening() {
@@ -689,17 +707,29 @@
       if (isUnlocked) {
         box.addEventListener("pointerdown", onBoxPointerDown);
 
-        const rotateBtn = document.createElement("div");
-        rotateBtn.className = "box-ctrl box-rotate";
-        rotateBtn.textContent = "⟳";
-        rotateBtn.style.left = "-10px";
-        rotateBtn.style.top = "-10px";
-        rotateBtn.onpointerdown = (e) => e.stopPropagation();
-        rotateBtn.onclick = (e) => {
+        const rotateCwBtn = document.createElement("div");
+        rotateCwBtn.className = "box-ctrl box-rotate";
+        rotateCwBtn.textContent = "⟳";
+        rotateCwBtn.style.left = "-10px";
+        rotateCwBtn.style.top = "-10px";
+        rotateCwBtn.onpointerdown = (e) => e.stopPropagation();
+        rotateCwBtn.onclick = (e) => {
           e.stopPropagation();
-          rotateTable(tableKey);
+          rotateTable(tableKey, 15);
         };
-        box.appendChild(rotateBtn);
+        box.appendChild(rotateCwBtn);
+
+        const rotateCcwBtn = document.createElement("div");
+        rotateCcwBtn.className = "box-ctrl box-rotate";
+        rotateCcwBtn.textContent = "⟲";
+        rotateCcwBtn.style.left = "16px";
+        rotateCcwBtn.style.top = "-10px";
+        rotateCcwBtn.onpointerdown = (e) => e.stopPropagation();
+        rotateCcwBtn.onclick = (e) => {
+          e.stopPropagation();
+          rotateTable(tableKey, -15);
+        };
+        box.appendChild(rotateCcwBtn);
 
         const delBtn = document.createElement("div");
         delBtn.className = "box-ctrl box-delete";
@@ -768,8 +798,8 @@
     dragState = null;
   }
 
-  async function rotateTable(tableKey) {
-    placements[tableKey].rot = ((placements[tableKey].rot || 0) + 15) % 360;
+  async function rotateTable(tableKey, delta) {
+    placements[tableKey].rot = (((placements[tableKey].rot || 0) + delta) % 360 + 360) % 360;
     await savePlacements();
     renderPlacements();
   }
