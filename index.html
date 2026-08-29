@@ -471,21 +471,24 @@
     floorSvg.setAttribute("height", h);
 
     const margin = 16;
-    const Rc = Math.min(w, h) * 0.20; // نصف قطر ساحة الرقص
-    const Ra = Math.max(14, Rc * 0.15); // نص عرض الممر (أضيق بكتير)
-    const Rq = 55; // نصف قطر ربع الدائرة بنهاية الممر
-    const capX = margin + Rc;
+    const Ra = 15;              // نص عرض الممر
     const centerY = h / 2;
-    const topY = centerY - Rc;
-    const bottomY = centerY + Rc;
-    const neckX = capX + (Rc - Ra); // نقطة بداية تضييق الممر
-    const aisleRightX = w - margin - Rq; // نهاية الجزء المستقيم من الممر (قبل ربع الدائرة)
-    const flareEndX = w - margin; // نهاية الصفحة
+    const neckX = w * 0.30;     // وين يبلش الممر بالتضييق (بداية ربع الدائرة)
+    const aisleRightX = w - margin; // الممر يمتد لأقصى اليمين
 
-    const d = `M ${flareEndX} ${centerY - Ra - Rq} A ${Rq} ${Rq} 0 0 1 ${aisleRightX} ${centerY - Ra} L ${neckX} ${centerY - Ra} L ${capX} ${topY} A ${Rc} ${Rc} 0 0 0 ${capX} ${bottomY} L ${neckX} ${centerY + Ra} L ${aisleRightX} ${centerY + Ra} A ${Rq} ${Rq} 0 0 0 ${flareEndX} ${centerY + Ra + Rq}`;
+    // نصف قطر ربع الدائرة: أكبر ما يمكن بحيث توصل لحافة الصفحة فوق/تحت بدون ما تطلع برا اللوحة
+    const R = Math.max(30, Math.min(centerY - Ra - 10, neckX - margin - 10));
+    const topCornerX = neckX - R;
+    const topCornerY = centerY - Ra - R;
+    const bottomCornerX = neckX - R;
+    const bottomCornerY = centerY + Ra + R;
+
+    const d =
+      `M ${aisleRightX} ${centerY - Ra} L ${neckX} ${centerY - Ra} A ${R} ${R} 0 0 0 ${topCornerX} ${topCornerY}` +
+      ` M ${aisleRightX} ${centerY + Ra} L ${neckX} ${centerY + Ra} A ${R} ${R} 0 0 1 ${bottomCornerX} ${bottomCornerY}`;
     floorSvg.innerHTML = `<path d="${d}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none" />`;
 
-    danceLabel.style.left = (capX - Rc * 0.45) + "px";
+    danceLabel.style.left = (neckX - R * 0.6) + "px";
     danceLabel.style.top = centerY + "px";
 
     aisleLabel.style.left = ((neckX + aisleRightX) / 2) + "px";
