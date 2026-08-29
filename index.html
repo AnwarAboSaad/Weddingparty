@@ -144,7 +144,7 @@
   #floor-plan {
     position: relative;
     width: 100%;
-    height: 560px;
+    height: 720px;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
@@ -648,11 +648,11 @@
 
     if (n === 0) return;
 
-    const thickness = 32;    // عرض ثابت للمستطيل (الاتجاه العرضي)
-    const boxGap = 6;        // مسافة صغيرة بين مربع وجاره بنفس الصف
+    const thickness = 48;    // عرض ثابت للمستطيل (الاتجاه العرضي) - أعرض
+    const boxGap = 2;        // فراغ بسيط جداً بين مربع وجاره بنفس الصف (شبه لاصقين)
     const gap = 8;           // مسافة بين ساحة الرقص وأول صف طاولات
-    const ringGap = 12;      // مسافة بين الصف الأمامي والخلفي
-    const maxSpreadDeg = 160; // أقصى انتشار (-80 لـ 80) لو العدد كبير
+    const ringGap = 2;       // مسافة صغيرة جداً بين الصف الأمامي والخلفي (شبه متلاصقين)
+    const maxSpreadDeg = 170; // أقصى انتشار لو العدد كبير
 
     // نحسب طول كل مربع مسبقاً بالصفين، ونعرف أطول طول بالصف الأمامي
     function computeLength(assignedTable) {
