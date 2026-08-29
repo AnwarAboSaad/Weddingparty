@@ -175,46 +175,19 @@
     font-size: 15px;
     cursor: pointer;
   }
-  #zoom-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  #zoom-controls button {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: none;
-    background: #b08d57;
-    color: #fff;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  #zoom-level {
-    font-size: 13px;
-    color: #555;
-    min-width: 44px;
-    text-align: center;
-  }
   #floor-plan-wrapper {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    overflow: auto;
+    overflow: visible;
     margin-bottom: 16px;
-    max-height: 640px;
   }
   #floor-plan {
     position: relative;
     width: 100%;
     height: 640px;
     background: #fff;
-    touch-action: none;
+    touch-action: pinch-zoom;
   }
   #floor-svg {
     position: absolute;
@@ -379,11 +352,6 @@
       <div id="seating-toolbar" style="display:none;">
         <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
       </div>
-      <div id="zoom-controls">
-        <button onclick="zoomOut()">−</button>
-        <span id="zoom-level">100%</span>
-        <button onclick="zoomIn()">+</button>
-      </div>
       <div id="floor-plan-wrapper">
         <div id="floor-plan">
           <svg id="floor-svg"></svg>
@@ -460,7 +428,6 @@
   const seatingToolbar = document.getElementById("seating-toolbar");
   const chartBtn = document.getElementById("chart-btn");
   const floorPlan = document.getElementById("floor-plan");
-  const floorPlanWrapper = document.getElementById("floor-plan-wrapper");
   const floorSvg = document.getElementById("floor-svg");
   const danceLabel = document.getElementById("dance-label");
   const aisleLabel = document.getElementById("aisle-label");
@@ -524,34 +491,9 @@
     if (currentView === "search") {
       renderTables(searchInput.value.trim() || null);
     } else {
-      applyZoom();
+      drawFloorPlan();
+      renderPlacements();
     }
-  }
-
-  /* ---------- التكبير والتصغير بصفحة الخريطة ---------- */
-  let zoomLevel = 1;
-  let baseFloorWidth = null;
-  const BASE_HEIGHT = 640;
-
-  function applyZoom() {
-    if (baseFloorWidth === null) {
-      baseFloorWidth = floorPlanWrapper.clientWidth || 320;
-    }
-    floorPlan.style.width = (baseFloorWidth * zoomLevel) + "px";
-    floorPlan.style.height = (BASE_HEIGHT * zoomLevel) + "px";
-    document.getElementById("zoom-level").textContent = Math.round(zoomLevel * 100) + "%";
-    drawFloorPlan();
-    renderPlacements();
-  }
-
-  function zoomIn() {
-    zoomLevel = Math.min(2.4, +(zoomLevel + 0.2).toFixed(2));
-    applyZoom();
-  }
-
-  function zoomOut() {
-    zoomLevel = Math.max(0.6, +(zoomLevel - 0.2).toFixed(2));
-    applyZoom();
   }
 
   // يرسم شكل ساحة الرقص + ممر العروسين كخط واحد متواصل (بدون خط فاصل بينهم)
