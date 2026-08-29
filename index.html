@@ -139,58 +139,87 @@
   }
   #save-status { font-size: 12px; color: #4a8c4a; }
 
-  /* ===== صفحة خريطة الطاولات ===== */
+  /* ===== صفحة خريطة الطاولات (لوحة رسم حرة) ===== */
   #seating-view { display: none; }
+  #seating-toolbar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  #add-table-map-btn {
+    background: #4a8c4a;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 15px;
+    cursor: pointer;
+  }
   #floor-plan {
     position: relative;
     width: 100%;
-    height: 720px;
+    height: 640px;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     overflow: hidden;
     margin-bottom: 16px;
+    touch-action: none;
   }
   #dance-floor {
     position: absolute;
-    left: 18%;
+    left: 50%;
     top: 50%;
-    transform: translate(0, -50%);
-    width: 120px;
-    height: 240px;
+    transform: translate(-50%, -50%);
+    width: 55%;
+    aspect-ratio: 1 / 1;
     border: 2px dashed #b08d57;
-    border-radius: 0 999px 999px 0;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #b08d57;
-    font-size: 12px;
+    font-size: 13px;
     text-align: center;
     z-index: 1;
+    pointer-events: none;
   }
-  .table-bar {
+  .table-box {
     position: absolute;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    z-index: 2;
     white-space: nowrap;
-  }
-  .table-bar.assigned {
     background: #b08d57;
     color: #fff;
     font-size: 12px;
     font-weight: bold;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    z-index: 2;
+    touch-action: none;
+    user-select: none;
   }
-  .table-bar.empty {
-    background: #f7f2ea;
-    border: 2px dashed #ccc;
-    color: #999;
-    font-size: 16px;
+  .table-box.locked-view { cursor: default; }
+  .table-box.editable { cursor: grab; }
+  .table-box.dragging { cursor: grabbing; opacity: 0.85; z-index: 10; }
+  .box-ctrl {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #222;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 11;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
+  .box-rotate { background: #6a5acd; }
+  .box-delete { background: #c0392b; }
   #seating-hint {
     text-align: center;
     color: #777;
@@ -277,7 +306,10 @@
 
     <!-- ===== صفحة خريطة الطاولات ===== -->
     <div id="seating-view">
-      <p id="seating-hint">دوس على مربع فاضي لتحدد أي طاولة هي، وبيتغير حجمها حسب عدد المدعوين</p>
+      <p id="seating-hint">اسحب أي طاولة لمكانها، ولف واحذف من الأزرار الصغيرة عليها</p>
+      <div id="seating-toolbar" style="display:none;">
+        <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
+      </div>
       <div id="floor-plan">
         <div id="dance-floor">ساحة<br/>الرقص</div>
       </div>
@@ -335,7 +367,7 @@
   };
 
   let currentData = {};
-  let seatingAssignments = {}; // { squareIndex(string): tableKey }
+  let placements = {}; // { tableKey: {x: percent, y: percent, rot: degrees} }
   let isUnlocked = false;
   let currentView = "search"; // "search" | "seating"
 
@@ -346,6 +378,7 @@
   const adminPanel = document.getElementById("admin-panel");
   const searchView = document.getElementById("search-view");
   const seatingView = document.getElementById("seating-view");
+  const seatingToolbar = document.getElementById("seating-toolbar");
   const chartBtn = document.getElementById("chart-btn");
   const floorPlan = document.getElementById("floor-plan");
   const danceFloor = document.getElementById("dance-floor");
@@ -376,10 +409,12 @@
       lockBtn.textContent = "🔓";
       lockBtn.classList.add("unlocked");
       adminPanel.style.display = currentView === "search" ? "block" : "none";
+      seatingToolbar.style.display = currentView === "seating" ? "flex" : "none";
     } else {
       lockBtn.textContent = "🔒";
       lockBtn.classList.remove("unlocked");
       adminPanel.style.display = "none";
+      seatingToolbar.style.display = "none";
     }
   }
 
@@ -390,11 +425,13 @@
       searchView.style.display = "none";
       seatingView.style.display = "block";
       adminPanel.style.display = "none";
+      seatingToolbar.style.display = isUnlocked ? "flex" : "none";
       chartBtn.textContent = "🔎";
     } else {
       currentView = "search";
       searchView.style.display = "block";
       seatingView.style.display = "none";
+      seatingToolbar.style.display = "none";
       chartBtn.textContent = "🪑";
       if (isUnlocked) adminPanel.style.display = "block";
     }
@@ -405,7 +442,7 @@
     if (currentView === "search") {
       renderTables(searchInput.value.trim() || null);
     } else {
-      renderSeating();
+      renderPlacements();
     }
   }
 
@@ -428,8 +465,8 @@
     });
 
     seatingRef.onSnapshot((snap) => {
-      seatingAssignments = (snap.exists && snap.data().assignments) ? snap.data().assignments : {};
-      if (currentView === "seating") renderSeating();
+      placements = (snap.exists && snap.data().placements) ? snap.data().placements : {};
+      if (currentView === "seating") renderPlacements();
     }, (err) => console.error(err));
   }
 
@@ -441,14 +478,6 @@
       setTimeout(() => (statusEl.textContent = ""), 1500);
     } catch (e) {
       statusEl.textContent = "⚠ فشل الحفظ";
-      console.error(e);
-    }
-  }
-
-  async function saveSeating() {
-    try {
-      await seatingRef.set({ assignments: seatingAssignments });
-    } catch (e) {
       console.error(e);
     }
   }
@@ -604,117 +633,166 @@
     await saveData();
   }
 
-  /* ---------- صفحة خريطة الطاولات ---------- */
-  function renderSeating() {
-    // إزالة المربعات القديمة فقط (نبقي ساحة الرقص)
-    floorPlan.querySelectorAll(".table-bar").forEach((el) => el.remove());
+  /* ---------- صفحة خريطة الطاولات (لوحة رسم حرة) ---------- */
+  let dragState = null; // {tableKey, startX, startY, origX, origY}
 
-    const keys = sortedTableKeys();
-    const n = keys.length;
-
-    // مركز الدوران (عند حافة ساحة الرقص) بالبكسل الحقيقي
-    const w = floorPlan.clientWidth;
-    const h = floorPlan.clientHeight;
-    const cx = w * 0.06;
-    const cy = h * 0.5;
-    const r0 = Math.min(w, h) * 0.40; // نصف قطر ساحة الرقص (أكبر بعد حذف الـ DJ)
-
-    danceFloor.style.left = cx + "px";
-    danceFloor.style.top = cy + "px";
-    danceFloor.style.width = r0 + "px";
-    danceFloor.style.height = (2 * r0) + "px";
-
-    if (n === 0) return;
-
-    const thickness = 22;    // عرض ثابت للمستطيل (الاتجاه العرضي)
-    const boxGap = 7;        // مسافة بين مربع وجاره بنفس الصف
-    const gap = 8;           // مسافة بين ساحة الرقص وأول صف طاولات
-    const ringGap = 2;       // مسافة صغيرة جداً بين الصف الأمامي والخلفي (يضلوا لازقين)
-    const maxSpreadDeg = 170; // أقصى انتشار لو العدد كبير
-
-    function computeLength(assignedTable) {
-      if (!assignedTable || !currentData[assignedTable]) return 50;
-      const count = currentData[assignedTable].length;
-      return Math.min(50 + count * 6, 170);
-    }
-
-    let maxFrontLength = 50;
-    for (let i = 0; i < n; i++) {
-      const len = computeLength(seatingAssignments[i]);
-      if (len > maxFrontLength) maxFrontLength = len;
-    }
-
-    const frontStartRadius = r0 + gap;
-    const backStartRadius = r0 + gap + maxFrontLength + ringGap;
-
-    // زوايا موحّدة تُحسب مرة وحدة بالاعتماد على الصف الأمامي، وتُستخدم لنفس الفهرس بالصفين
-    // هيك الصف الثاني بيضل دايماً لاصق بمكان الصف الأول بنفس الزاوية بالظبط
-    const stepRad = (thickness + boxGap) / frontStartRadius;
-    const stepDeg = Math.max(4, stepRad * (180 / Math.PI));
-    const spread = n > 1 ? Math.min((n - 1) * stepDeg, maxSpreadDeg) : 0;
-    const angleStart = -spread / 2;
-    const angles = Array.from({ length: n }, (_, i) =>
-      n > 1 ? angleStart + (i / (n - 1)) * spread : 0
-    );
-
-    function drawRing(ringStartRadius, indexOffset) {
-      for (let i = 0; i < n; i++) {
-        const squareIndex = indexOffset + i;
-        const angleDeg = angles[i];
-        const angleRad = (angleDeg * Math.PI) / 180;
-
-        const assignedTable = seatingAssignments[squareIndex];
-        const isAssigned = assignedTable && currentData[assignedTable];
-        const length = computeLength(assignedTable);
-        const midRadius = ringStartRadius + length / 2;
-
-        const x = cx + midRadius * Math.cos(angleRad);
-        const y = cy + midRadius * Math.sin(angleRad);
-
-        const bar = document.createElement("div");
-        bar.className = "table-bar " + (isAssigned ? "assigned" : "empty");
-        bar.style.left = x + "px";
-        bar.style.top = y + "px";
-        bar.style.width = length + "px";
-        bar.style.height = thickness + "px";
-        bar.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
-        bar.innerHTML = isAssigned ? assignedTable : "+";
-
-        bar.onclick = () => openTablePicker(squareIndex);
-        floorPlan.appendChild(bar);
-      }
-    }
-
-    drawRing(frontStartRadius, 0);
-    drawRing(backStartRadius, n);
+  function computeLength(tableKey) {
+    if (!tableKey || !currentData[tableKey]) return 60;
+    const count = currentData[tableKey].length;
+    return Math.min(50 + count * 6, 170);
   }
 
-  function openTablePicker(squareIndex) {
+  function renderPlacements() {
+    floorPlan.querySelectorAll(".table-box").forEach((el) => el.remove());
+
+    Object.keys(placements).forEach((tableKey) => {
+      if (!currentData[tableKey]) return; // الطاولة انحذفت من صفحة المعازيم
+      const p = placements[tableKey];
+      const length = computeLength(tableKey);
+      const thickness = 30;
+
+      const box = document.createElement("div");
+      box.className = "table-box " + (isUnlocked ? "editable" : "locked-view");
+      box.style.left = p.x + "%";
+      box.style.top = p.y + "%";
+      box.style.width = length + "px";
+      box.style.height = thickness + "px";
+      box.style.transform = `translate(-50%, -50%) rotate(${p.rot || 0}deg)`;
+      box.textContent = tableKey;
+      box.dataset.table = tableKey;
+
+      if (isUnlocked) {
+        box.addEventListener("pointerdown", onBoxPointerDown);
+
+        const rotateBtn = document.createElement("div");
+        rotateBtn.className = "box-ctrl box-rotate";
+        rotateBtn.textContent = "⟳";
+        rotateBtn.style.left = "-10px";
+        rotateBtn.style.top = "-10px";
+        rotateBtn.onpointerdown = (e) => e.stopPropagation();
+        rotateBtn.onclick = (e) => {
+          e.stopPropagation();
+          rotateTable(tableKey);
+        };
+        box.appendChild(rotateBtn);
+
+        const delBtn = document.createElement("div");
+        delBtn.className = "box-ctrl box-delete";
+        delBtn.textContent = "✕";
+        delBtn.style.right = "-10px";
+        delBtn.style.top = "-10px";
+        delBtn.onpointerdown = (e) => e.stopPropagation();
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          removeTableFromMap(tableKey);
+        };
+        box.appendChild(delBtn);
+      }
+
+      floorPlan.appendChild(box);
+    });
+  }
+
+  function onBoxPointerDown(e) {
+    if (!isUnlocked) return;
+    const box = e.currentTarget;
+    const tableKey = box.dataset.table;
+    box.setPointerCapture(e.pointerId);
+    box.classList.add("dragging");
+    const rect = floorPlan.getBoundingClientRect();
+    dragState = {
+      tableKey,
+      box,
+      rect,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: placements[tableKey].x,
+      origY: placements[tableKey].y,
+    };
+    box.addEventListener("pointermove", onBoxPointerMove);
+    box.addEventListener("pointerup", onBoxPointerUp);
+    box.addEventListener("pointercancel", onBoxPointerUp);
+  }
+
+  function onBoxPointerMove(e) {
+    if (!dragState) return;
+    const dxPct = ((e.clientX - dragState.startX) / dragState.rect.width) * 100;
+    const dyPct = ((e.clientY - dragState.startY) / dragState.rect.height) * 100;
+    let newX = dragState.origX + dxPct;
+    let newY = dragState.origY + dyPct;
+    newX = Math.max(2, Math.min(98, newX));
+    newY = Math.max(2, Math.min(98, newY));
+    dragState.box.style.left = newX + "%";
+    dragState.box.style.top = newY + "%";
+    dragState.currentX = newX;
+    dragState.currentY = newY;
+  }
+
+  async function onBoxPointerUp(e) {
+    if (!dragState) return;
+    const { box, tableKey } = dragState;
+    box.classList.remove("dragging");
+    box.removeEventListener("pointermove", onBoxPointerMove);
+    box.removeEventListener("pointerup", onBoxPointerUp);
+    box.removeEventListener("pointercancel", onBoxPointerUp);
+    if (dragState.currentX !== undefined) {
+      placements[tableKey].x = dragState.currentX;
+      placements[tableKey].y = dragState.currentY;
+      await savePlacements();
+    }
+    dragState = null;
+  }
+
+  async function rotateTable(tableKey) {
+    placements[tableKey].rot = ((placements[tableKey].rot || 0) + 15) % 360;
+    await savePlacements();
+    renderPlacements();
+  }
+
+  async function removeTableFromMap(tableKey) {
+    delete placements[tableKey];
+    await savePlacements();
+    renderPlacements();
+  }
+
+  async function savePlacements() {
+    try {
+      await seatingRef.set({ placements });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // إزالة أي مكان لطاولة تم حذفها من صفحة المعازيم
+  function cleanupSeatingAssignments() {
+    const validKeys = new Set(Object.keys(currentData));
+    let changed = false;
+    Object.keys(placements).forEach((tableKey) => {
+      if (!validKeys.has(tableKey)) {
+        delete placements[tableKey];
+        changed = true;
+      }
+    });
+    if (changed) savePlacements();
+  }
+
+  function openAddTableToMap() {
     if (!isUnlocked) {
-      alert("افتح القفل 🔒 أولاً لتقدر تحدد الطاولات");
+      alert("افتح القفل 🔒 أولاً لتقدر تضيف طاولات عالخريطة");
       return;
     }
     const keys = sortedTableKeys();
-    const currentAssignment = seatingAssignments[squareIndex];
-    const assignedElsewhere = new Set(
-      Object.entries(seatingAssignments)
-        .filter(([idx]) => idx !== String(squareIndex))
-        .map(([, v]) => v)
-    );
-    const available = keys.filter((k) => !assignedElsewhere.has(k));
+    const alreadyPlaced = new Set(Object.keys(placements));
+    const available = keys.filter((k) => !alreadyPlaced.has(k));
 
     let html = `<h3>اختر الطاولة</h3>`;
     if (available.length === 0) {
-      html += `<p style="text-align:center; color:#777;">كل الطاولات معيّنة مسبقاً</p>`;
+      html += `<p style="text-align:center; color:#777;">كل الطاولات مضافة عالخريطة مسبقاً</p>`;
     } else {
       available.forEach((k) => {
         const count = currentData[k].length;
-        const selected = k === currentAssignment ? " ✓" : "";
-        html += `<button class="modal-option" onclick="assignTable(${squareIndex}, '${k.replace(/'/g, "\\'")}')">${k} (${count} شخص)${selected}</button>`;
+        html += `<button class="modal-option" onclick="addTableToMap('${k.replace(/'/g, "\\'")}')">${k} (${count} شخص)</button>`;
       });
-    }
-    if (currentAssignment) {
-      html += `<button class="modal-option modal-clear" onclick="assignTable(${squareIndex}, null)">✕ إلغاء تعيين هذا المربع</button>`;
     }
     html += `<button class="modal-close" onclick="closeModal()">إغلاق</button>`;
 
@@ -722,15 +800,11 @@
     modalOverlay.style.display = "flex";
   }
 
-  async function assignTable(squareIndex, tableKey) {
-    if (tableKey === null) {
-      delete seatingAssignments[squareIndex];
-    } else {
-      seatingAssignments[squareIndex] = tableKey;
-    }
-    await saveSeating();
+  async function addTableToMap(tableKey) {
+    placements[tableKey] = { x: 75, y: 50, rot: 0 };
+    await savePlacements();
     closeModal();
-    renderSeating();
+    renderPlacements();
   }
 
   function closeModal() {
@@ -743,10 +817,6 @@
 
   // بدء التطبيق
   startListening();
-
-  window.addEventListener("resize", () => {
-    if (currentView === "seating") renderSeating();
-  });
 </script>
 </body>
 </html>
