@@ -151,23 +151,6 @@
     overflow: hidden;
     margin-bottom: 16px;
   }
-  #dj-box {
-    position: absolute;
-    left: 10%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    background: #222;
-    color: #fff;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-    z-index: 3;
-  }
   #dance-floor {
     position: absolute;
     left: 18%;
@@ -296,7 +279,6 @@
     <div id="seating-view">
       <p id="seating-hint">دوس على مربع فاضي لتحدد أي طاولة هي، وبيتغير حجمها حسب عدد المدعوين</p>
       <div id="floor-plan">
-        <div id="dj-box">DJ</div>
         <div id="dance-floor">ساحة<br/>الرقص</div>
       </div>
     </div>
@@ -366,7 +348,6 @@
   const seatingView = document.getElementById("seating-view");
   const chartBtn = document.getElementById("chart-btn");
   const floorPlan = document.getElementById("floor-plan");
-  const djBox = document.getElementById("dj-box");
   const danceFloor = document.getElementById("dance-floor");
   const modalOverlay = document.getElementById("modal-overlay");
   const modalBox = document.getElementById("modal-box");
@@ -625,22 +606,19 @@
 
   /* ---------- صفحة خريطة الطاولات ---------- */
   function renderSeating() {
-    // إزالة المربعات القديمة فقط (نبقي DJ وساحة الرقص)
+    // إزالة المربعات القديمة فقط (نبقي ساحة الرقص)
     floorPlan.querySelectorAll(".table-bar").forEach((el) => el.remove());
 
     const keys = sortedTableKeys();
     const n = keys.length;
 
-    // مركز الدوران (يسار الحاوية، عند حافة ساحة الرقص) بالبكسل الحقيقي
+    // مركز الدوران (عند حافة ساحة الرقص) بالبكسل الحقيقي
     const w = floorPlan.clientWidth;
     const h = floorPlan.clientHeight;
-    const cx = w * 0.18;
+    const cx = w * 0.06;
     const cy = h * 0.5;
-    const r0 = Math.min(w, h) * 0.30; // نصف قطر ساحة الرقص (نقطة انطلاق الطاولات)
+    const r0 = Math.min(w, h) * 0.40; // نصف قطر ساحة الرقص (أكبر بعد حذف الـ DJ)
 
-    // إعادة رسم DJ وساحة الرقص بنفس المركز
-    djBox.style.left = Math.max(30, cx - r0 * 0.75) + "px";
-    djBox.style.top = cy + "px";
     danceFloor.style.left = cx + "px";
     danceFloor.style.top = cy + "px";
     danceFloor.style.width = r0 + "px";
@@ -648,13 +626,12 @@
 
     if (n === 0) return;
 
-    const thickness = 15;    // عرض ثابت للمستطيل (الاتجاه العرضي)
-    const boxGap = 2;        // فراغ بسيط جداً بين مربع وجاره بنفس الصف (شبه لاصقين)
+    const thickness = 22;    // عرض ثابت للمستطيل (الاتجاه العرضي)
+    const boxGap = 7;        // مسافة بين مربع وجاره بنفس الصف
     const gap = 8;           // مسافة بين ساحة الرقص وأول صف طاولات
-    const ringGap = 2;       // مسافة صغيرة جداً بين الصف الأمامي والخلفي (شبه متلاصقين)
+    const ringGap = 2;       // مسافة صغيرة جداً بين الصف الأمامي والخلفي (يضلوا لازقين)
     const maxSpreadDeg = 170; // أقصى انتشار لو العدد كبير
 
-    // نحسب طول كل مربع مسبقاً بالصفين، ونعرف أطول طول بالصف الأمامي
     function computeLength(assignedTable) {
       if (!assignedTable || !currentData[assignedTable]) return 50;
       const count = currentData[assignedTable].length;
@@ -667,25 +644,23 @@
       if (len > maxFrontLength) maxFrontLength = len;
     }
 
-    const frontRadius = r0 + gap + maxFrontLength / 2;
-    const backRadius = r0 + gap + maxFrontLength + ringGap + 40; // تقدير معقول لنص طول الصف الخلفي
+    const frontStartRadius = r0 + gap;
+    const backStartRadius = r0 + gap + maxFrontLength + ringGap;
 
-    function angularStepDeg(radius) {
-      const stepRad = (thickness + boxGap) / radius;
-      return Math.max(5, stepRad * (180 / Math.PI));
-    }
+    // زوايا موحّدة تُحسب مرة وحدة بالاعتماد على الصف الأمامي، وتُستخدم لنفس الفهرس بالصفين
+    // هيك الصف الثاني بيضل دايماً لاصق بمكان الصف الأول بنفس الزاوية بالظبط
+    const stepRad = (thickness + boxGap) / frontStartRadius;
+    const stepDeg = Math.max(4, stepRad * (180 / Math.PI));
+    const spread = n > 1 ? Math.min((n - 1) * stepDeg, maxSpreadDeg) : 0;
+    const angleStart = -spread / 2;
+    const angles = Array.from({ length: n }, (_, i) =>
+      n > 1 ? angleStart + (i / (n - 1)) * spread : 0
+    );
 
-    function drawRing(ringStartRadius, refRadiusForSpacing, indexOffset) {
-      const step = angularStepDeg(refRadiusForSpacing);
-      const requiredSpread = (n - 1) * step;
-      const spread = Math.min(requiredSpread, maxSpreadDeg);
-      const angleStart = -spread / 2;
-      const angleEnd = spread / 2;
-
+    function drawRing(ringStartRadius, indexOffset) {
       for (let i = 0; i < n; i++) {
         const squareIndex = indexOffset + i;
-        const t = n > 1 ? i / (n - 1) : 0.5;
-        const angleDeg = n > 1 ? angleStart + t * (angleEnd - angleStart) : 0;
+        const angleDeg = angles[i];
         const angleRad = (angleDeg * Math.PI) / 180;
 
         const assignedTable = seatingAssignments[squareIndex];
@@ -710,8 +685,8 @@
       }
     }
 
-    drawRing(r0 + gap, frontRadius, 0);
-    drawRing(r0 + gap + maxFrontLength + ringGap, backRadius, n);
+    drawRing(frontStartRadius, 0);
+    drawRing(backStartRadius, n);
   }
 
   function openTablePicker(squareIndex) {
