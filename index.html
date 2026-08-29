@@ -168,13 +168,13 @@
   }
   #dance-floor {
     position: absolute;
-    left: 50%;
+    left: 0;
     top: 50%;
-    transform: translate(-50%, -50%);
-    width: 55%;
-    aspect-ratio: 1 / 1;
+    transform: translate(0, -50%);
+    width: 38%;
+    height: 76%;
     border: 2px dashed #b08d57;
-    border-radius: 50%;
+    border-radius: 0 999px 999px 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,6 +183,32 @@
     text-align: center;
     z-index: 1;
     pointer-events: none;
+  }
+  #aisle {
+    position: absolute;
+    left: 38%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32%;
+    height: 64px;
+    border-top: 2px dashed #b08d57;
+    border-bottom: 2px dashed #b08d57;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b08d57;
+    font-size: 12px;
+    text-align: center;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .dev-credit {
+    text-align: center;
+    color: #bbb;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+    margin: 4px 0 12px;
   }
   .table-box {
     position: absolute;
@@ -301,17 +327,19 @@
         </div>
       </div>
 
+      <p class="dev-credit">Developer: Anwar Abo Saad</p>
       <div id="results" class="tables-container"></div>
     </div>
 
     <!-- ===== صفحة خريطة الطاولات ===== -->
     <div id="seating-view">
-      <p id="seating-hint">اسحب أي طاولة لمكانها، ولف واحذف من الأزرار الصغيرة عليها</p>
+      <p class="dev-credit">Developer: Anwar Abo Saad</p>
       <div id="seating-toolbar" style="display:none;">
         <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
       </div>
       <div id="floor-plan">
         <div id="dance-floor">ساحة<br/>الرقص</div>
+        <div id="aisle">ممر العروسين</div>
       </div>
     </div>
   </div>
@@ -482,17 +510,17 @@
     }
   }
 
-  // إزالة أي تعيين لطاولة تم حذفها من الصفحة الأولى
+  // إزالة أي مكان لطاولة تم حذفها من صفحة المعازيم
   function cleanupSeatingAssignments() {
     const validKeys = new Set(Object.keys(currentData));
     let changed = false;
-    Object.keys(seatingAssignments).forEach((squareIdx) => {
-      if (!validKeys.has(seatingAssignments[squareIdx])) {
-        delete seatingAssignments[squareIdx];
+    Object.keys(placements).forEach((tableKey) => {
+      if (!validKeys.has(tableKey)) {
+        delete placements[tableKey];
         changed = true;
       }
     });
-    if (changed) saveSeating();
+    if (changed) savePlacements();
   }
 
   function sortedTableKeys() {
@@ -609,15 +637,12 @@
     currentData = rebuilt;
     await saveData();
 
-    // تحديث خريطة الطاولات إذا كانت هالطاولة معيّنة لمربع
-    let seatingChanged = false;
-    Object.keys(seatingAssignments).forEach((squareIdx) => {
-      if (seatingAssignments[squareIdx] === oldName) {
-        seatingAssignments[squareIdx] = trimmed;
-        seatingChanged = true;
-      }
-    });
-    if (seatingChanged) await saveSeating();
+    // تحديث خريطة الطاولات إذا كانت هالطاولة موضوعة عالخريطة
+    if (placements[oldName]) {
+      placements[trimmed] = placements[oldName];
+      delete placements[oldName];
+      await savePlacements();
+    }
   }
 
   async function addGuest(table) {
@@ -761,19 +786,6 @@
     } catch (e) {
       console.error(e);
     }
-  }
-
-  // إزالة أي مكان لطاولة تم حذفها من صفحة المعازيم
-  function cleanupSeatingAssignments() {
-    const validKeys = new Set(Object.keys(currentData));
-    let changed = false;
-    Object.keys(placements).forEach((tableKey) => {
-      if (!validKeys.has(tableKey)) {
-        delete placements[tableKey];
-        changed = true;
-      }
-    });
-    if (changed) savePlacements();
   }
 
   function openAddTableToMap() {
