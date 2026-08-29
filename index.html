@@ -175,15 +175,45 @@
     font-size: 15px;
     cursor: pointer;
   }
+  #zoom-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  #zoom-controls button {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: #b08d57;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #zoom-level {
+    font-size: 13px;
+    color: #555;
+    min-width: 44px;
+    text-align: center;
+  }
+  #floor-plan-wrapper {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    overflow: auto;
+    margin-bottom: 16px;
+    max-height: 640px;
+  }
   #floor-plan {
     position: relative;
     width: 100%;
     height: 640px;
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    overflow: hidden;
-    margin-bottom: 16px;
     touch-action: none;
   }
   #floor-svg {
@@ -349,10 +379,17 @@
       <div id="seating-toolbar" style="display:none;">
         <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
       </div>
-      <div id="floor-plan">
-        <svg id="floor-svg"></svg>
-        <div id="dance-label" class="floor-label">ساحة<br/>الرقص</div>
-        <div id="aisle-label" class="floor-label">ممر العروسين</div>
+      <div id="zoom-controls">
+        <button onclick="zoomOut()">−</button>
+        <span id="zoom-level">100%</span>
+        <button onclick="zoomIn()">+</button>
+      </div>
+      <div id="floor-plan-wrapper">
+        <div id="floor-plan">
+          <svg id="floor-svg"></svg>
+          <div id="dance-label" class="floor-label">ساحة<br/>الرقص</div>
+          <div id="aisle-label" class="floor-label">ممر العروسين</div>
+        </div>
       </div>
     </div>
   </div>
@@ -423,6 +460,7 @@
   const seatingToolbar = document.getElementById("seating-toolbar");
   const chartBtn = document.getElementById("chart-btn");
   const floorPlan = document.getElementById("floor-plan");
+  const floorPlanWrapper = document.getElementById("floor-plan-wrapper");
   const floorSvg = document.getElementById("floor-svg");
   const danceLabel = document.getElementById("dance-label");
   const aisleLabel = document.getElementById("aisle-label");
@@ -486,9 +524,34 @@
     if (currentView === "search") {
       renderTables(searchInput.value.trim() || null);
     } else {
-      drawFloorPlan();
-      renderPlacements();
+      applyZoom();
     }
+  }
+
+  /* ---------- التكبير والتصغير بصفحة الخريطة ---------- */
+  let zoomLevel = 1;
+  let baseFloorWidth = null;
+  const BASE_HEIGHT = 640;
+
+  function applyZoom() {
+    if (baseFloorWidth === null) {
+      baseFloorWidth = floorPlanWrapper.clientWidth || 320;
+    }
+    floorPlan.style.width = (baseFloorWidth * zoomLevel) + "px";
+    floorPlan.style.height = (BASE_HEIGHT * zoomLevel) + "px";
+    document.getElementById("zoom-level").textContent = Math.round(zoomLevel * 100) + "%";
+    drawFloorPlan();
+    renderPlacements();
+  }
+
+  function zoomIn() {
+    zoomLevel = Math.min(2.4, +(zoomLevel + 0.2).toFixed(2));
+    applyZoom();
+  }
+
+  function zoomOut() {
+    zoomLevel = Math.max(0.6, +(zoomLevel - 0.2).toFixed(2));
+    applyZoom();
   }
 
   // يرسم شكل ساحة الرقص + ممر العروسين كخط واحد متواصل (بدون خط فاصل بينهم)
@@ -537,14 +600,15 @@
     Object.keys(data).forEach((key) => {
       const val = data[key];
       if (Array.isArray(val)) {
-        out[key] = { count: null, names: val };
+        out[key] = { count: null, tablesCount: null, names: val };
       } else if (val && typeof val === "object") {
         out[key] = {
           count: typeof val.count === "number" ? val.count : null,
+          tablesCount: typeof val.tablesCount === "number" ? val.tablesCount : null,
           names: Array.isArray(val.names) ? val.names : [],
         };
       } else {
-        out[key] = { count: null, names: [] };
+        out[key] = { count: null, tablesCount: null, names: [] };
       }
     });
     return out;
@@ -615,6 +679,7 @@
     keys.forEach((table) => {
       const names = currentData[table].names;
       const declaredCount = currentData[table].count;
+      const declaredTablesCount = currentData[table].tablesCount;
       const matches = filter ? names.filter((n) => n.includes(filter)) : names;
       if (filter && matches.length === 0) return;
       found = true;
@@ -653,6 +718,13 @@
            </div>`
         : `<div class="count-field-readonly">عدد الأشخاص: ${declaredCount === null || declaredCount === undefined ? "—" : declaredCount}</div>`;
 
+      const tablesCountField = isUnlocked
+        ? `<div class="count-field">عدد الطاولات:
+             <input type="number" min="0" value="${declaredTablesCount === null || declaredTablesCount === undefined ? "" : declaredTablesCount}" placeholder="—"
+               onchange="updateTableTablesCount('${table.replace(/'/g, "\\'")}', this.value)" />
+           </div>`
+        : `<div class="count-field-readonly">عدد الطاولات: ${declaredTablesCount === null || declaredTablesCount === undefined ? "—" : declaredTablesCount}</div>`;
+
       const addGuestRow = isUnlocked
         ? `<div class="add-guest-row">
              <input type="text" id="add-guest-${table}" placeholder="اسم معزوم جديد" />
@@ -663,6 +735,7 @@
       card.innerHTML = `
         <h3>طاولة ${table}${tableActions}</h3>
         ${countField}
+        ${tablesCountField}
         <ul>${listHtml}</ul>
         ${addGuestRow}
       `;
@@ -698,7 +771,7 @@
       return;
     }
     const names = namesRaw ? namesRaw.split(".").map((n) => n.trim()).filter(Boolean) : [];
-    currentData[num] = { count: null, names };
+    currentData[num] = { count: null, tablesCount: null, names };
     numInput.value = "";
     namesInput.value = "";
     await saveData();
@@ -717,6 +790,17 @@
     } else {
       const n = parseInt(trimmed, 10);
       currentData[table].count = isNaN(n) || n < 0 ? null : n;
+    }
+    await saveData();
+  }
+
+  async function updateTableTablesCount(table, value) {
+    const trimmed = String(value).trim();
+    if (trimmed === "") {
+      currentData[table].tablesCount = null;
+    } else {
+      const n = parseInt(trimmed, 10);
+      currentData[table].tablesCount = isNaN(n) || n < 0 ? null : n;
     }
     await saveData();
   }
@@ -780,7 +864,8 @@
       const p = placements[tableKey];
       const length = computeLength(tableKey);
       const thickness = 15;
-      const count = currentData[tableKey].count || 0;
+      const count = currentData[tableKey].count;
+      const tablesCount = currentData[tableKey].tablesCount;
 
       const box = document.createElement("div");
       box.className = "table-box " + (isUnlocked ? "editable" : "locked-view");
@@ -789,7 +874,8 @@
       box.style.width = length + "px";
       box.style.height = thickness + "px";
       box.style.transform = `translate(-50%, -50%) rotate(${p.rot || 0}deg)`;
-      box.innerHTML = `<div class="box-name">${tableKey}</div><div class="box-count">${count} شخص</div>`;
+      const countText = `${count === null || count === undefined ? "—" : count}/${tablesCount === null || tablesCount === undefined ? "—" : tablesCount}`;
+      box.innerHTML = `<div class="box-name">${tableKey}</div><div class="box-count">${countText}</div>`;
       box.dataset.table = tableKey;
 
       if (isUnlocked) {
