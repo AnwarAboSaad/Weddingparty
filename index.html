@@ -471,20 +471,22 @@
     floorSvg.setAttribute("height", h);
 
     const margin = 16;
-    const R = Math.min(w, h) * 0.32; // نصف قطر الساحة = نص سماكة الممر (أرفع)
-    const capX = margin + R;
+    const Rc = Math.min(w, h) * 0.34; // نصف قطر ساحة الرقص (واسعة)
+    const Ra = Rc * 0.32;             // نص عرض الممر (أضيق بكتير)
+    const capX = margin + Rc;
     const centerY = h / 2;
-    const topY = centerY - R;
-    const bottomY = centerY + R;
+    const topY = centerY - Rc;
+    const bottomY = centerY + Rc;
+    const neckX = capX + (Rc - Ra); // نقطة بداية تضييق الممر
     const aisleRightX = w - margin; // الممر يمتد لأقصى اليمين
 
-    const d = `M ${aisleRightX} ${topY} L ${capX} ${topY} A ${R} ${R} 0 0 0 ${capX} ${bottomY} L ${aisleRightX} ${bottomY}`;
+    const d = `M ${aisleRightX} ${centerY - Ra} L ${neckX} ${centerY - Ra} L ${capX} ${topY} A ${Rc} ${Rc} 0 0 0 ${capX} ${bottomY} L ${neckX} ${centerY + Ra} L ${aisleRightX} ${centerY + Ra}`;
     floorSvg.innerHTML = `<path d="${d}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none" />`;
 
-    danceLabel.style.left = (capX - R * 0.45) + "px";
+    danceLabel.style.left = (capX - Rc * 0.45) + "px";
     danceLabel.style.top = centerY + "px";
 
-    aisleLabel.style.left = ((capX + aisleRightX) / 2) + "px";
+    aisleLabel.style.left = ((neckX + aisleRightX) / 2) + "px";
     aisleLabel.style.top = centerY + "px";
   }
 
