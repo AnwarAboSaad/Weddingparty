@@ -204,6 +204,13 @@
     white-space: nowrap;
     transform: translate(-50%, -50%);
   }
+  .total-count-label {
+    text-align: center;
+    color: #555;
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0 0 12px;
+  }
   .dev-credit {
     text-align: center;
     color: #bbb;
@@ -216,18 +223,20 @@
     position: absolute;
     border-radius: 8px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     white-space: nowrap;
     background: #b08d57;
     color: #fff;
-    font-size: 12px;
-    font-weight: bold;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     z-index: 2;
     touch-action: none;
     user-select: none;
+    line-height: 1.15;
   }
+  .table-box .box-name { font-size: 5px; font-weight: bold; }
+  .table-box .box-count { font-size: 4px; font-weight: normal; opacity: 0.9; }
   .table-box.locked-view { cursor: default; }
   .table-box.editable { cursor: grab; }
   .table-box.dragging { cursor: grabbing; opacity: 0.85; z-index: 10; }
@@ -319,6 +328,7 @@
     <!-- ===== صفحة البحث ===== -->
     <div id="search-view">
       <input type="text" id="search" placeholder="اكتب الاسم هنا..." />
+      <p id="total-count" class="total-count-label"></p>
 
       <div id="admin-panel" class="admin-panel" style="display:none;">
         <h3>➕ إضافة طاولة جديدة</h3>
@@ -403,6 +413,7 @@
   let currentView = "search"; // "search" | "seating"
 
   const resultsDiv = document.getElementById("results");
+  const totalCountEl = document.getElementById("total-count");
   const searchInput = document.getElementById("search");
   const statusEl = document.getElementById("save-status");
   const lockBtn = document.getElementById("lock-btn");
@@ -526,14 +537,14 @@
     Object.keys(data).forEach((key) => {
       const val = data[key];
       if (Array.isArray(val)) {
-        out[key] = { count: val.length, names: val };
+        out[key] = { count: null, names: val };
       } else if (val && typeof val === "object") {
         out[key] = {
-          count: typeof val.count === "number" ? val.count : (val.names ? val.names.length : 0),
+          count: typeof val.count === "number" ? val.count : null,
           names: Array.isArray(val.names) ? val.names : [],
         };
       } else {
-        out[key] = { count: 0, names: [] };
+        out[key] = { count: null, names: [] };
       }
     });
     return out;
@@ -637,10 +648,10 @@
 
       const countField = isUnlocked
         ? `<div class="count-field">عدد الأشخاص:
-             <input type="number" min="0" value="${declaredCount}"
+             <input type="number" min="0" value="${declaredCount === null || declaredCount === undefined ? "" : declaredCount}" placeholder="—"
                onchange="updateTableCount('${table.replace(/'/g, "\\'")}', this.value)" />
            </div>`
-        : `<div class="count-field-readonly">عدد الأشخاص: ${declaredCount}</div>`;
+        : `<div class="count-field-readonly">عدد الأشخاص: ${declaredCount === null || declaredCount === undefined ? "—" : declaredCount}</div>`;
 
       const addGuestRow = isUnlocked
         ? `<div class="add-guest-row">
@@ -661,6 +672,16 @@
     if (!found) {
       resultsDiv.innerHTML = `<p class="no-results">لا يوجد نتائج</p>`;
     }
+
+    updateTotalCount();
+  }
+
+  function updateTotalCount() {
+    const total = Object.values(currentData).reduce(
+      (sum, t) => sum + (typeof t.count === "number" ? t.count : 0),
+      0
+    );
+    totalCountEl.textContent = `إجمالي عدد الأشخاص: ${total}`;
   }
 
   searchInput.addEventListener("input", function () {
@@ -677,7 +698,7 @@
       return;
     }
     const names = namesRaw ? namesRaw.split(".").map((n) => n.trim()).filter(Boolean) : [];
-    currentData[num] = { count: names.length, names };
+    currentData[num] = { count: null, names };
     numInput.value = "";
     namesInput.value = "";
     await saveData();
@@ -690,8 +711,13 @@
   }
 
   async function updateTableCount(table, value) {
-    const n = parseInt(value, 10);
-    currentData[table].count = isNaN(n) || n < 0 ? 0 : n;
+    const trimmed = String(value).trim();
+    if (trimmed === "") {
+      currentData[table].count = null;
+    } else {
+      const n = parseInt(trimmed, 10);
+      currentData[table].count = isNaN(n) || n < 0 ? null : n;
+    }
     await saveData();
   }
 
@@ -753,7 +779,7 @@
       if (!currentData[tableKey]) return; // الطاولة انحذفت من صفحة المعازيم
       const p = placements[tableKey];
       const length = computeLength(tableKey);
-      const thickness = 30;
+      const thickness = 15;
       const count = currentData[tableKey].count || 0;
 
       const box = document.createElement("div");
@@ -894,7 +920,7 @@
       html += `<p style="text-align:center; color:#777;">كل الطاولات مضافة عالخريطة مسبقاً</p>`;
     } else {
       available.forEach((k) => {
-        const count = currentData[k].length;
+        const count = currentData[k].count || 0;
         html += `<button class="modal-option" onclick="addTableToMap('${k.replace(/'/g, "\\'")}')">${k} (${count} شخص)</button>`;
       });
     }
