@@ -99,6 +99,26 @@
     margin-left: 6px;
   }
   .card h3 .table-actions { display: flex; gap: 6px; }
+  .count-field {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .count-field input {
+    width: 60px;
+    padding: 4px 6px;
+    margin: 0;
+    font-size: 13px;
+    text-align: center;
+  }
+  .count-field-readonly {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 8px;
+  }
   .card ul { list-style: none; padding: 0; margin: 0; }
   .card ul li {
     font-size: 15px;
@@ -500,14 +520,33 @@
   });
 
   /* ---------- تحميل بيانات الطاولات (بث حي) ---------- */
+  // يحوّل بيانات الطاولات (سواء كانت قديمة "مصفوفة أسماء" أو جديدة) لصيغة موحّدة {count, names}
+  function normalizeTables(data) {
+    const out = {};
+    Object.keys(data).forEach((key) => {
+      const val = data[key];
+      if (Array.isArray(val)) {
+        out[key] = { count: val.length, names: val };
+      } else if (val && typeof val === "object") {
+        out[key] = {
+          count: typeof val.count === "number" ? val.count : (val.names ? val.names.length : 0),
+          names: Array.isArray(val.names) ? val.names : [],
+        };
+      } else {
+        out[key] = { count: 0, names: [] };
+      }
+    });
+    return out;
+  }
+
   function startListening() {
     statusEl.textContent = "جارِ الاتصال...";
     tablesRef.onSnapshot(async (snap) => {
       if (snap.exists && snap.data().tables) {
-        currentData = snap.data().tables;
+        currentData = normalizeTables(snap.data().tables);
         statusEl.textContent = "";
       } else {
-        currentData = JSON.parse(JSON.stringify(defaultTables));
+        currentData = normalizeTables(JSON.parse(JSON.stringify(defaultTables)));
         await tablesRef.set({ tables: currentData });
       }
       cleanupSeatingAssignments();
@@ -563,7 +602,8 @@
     let found = false;
 
     keys.forEach((table) => {
-      const names = currentData[table];
+      const names = currentData[table].names;
+      const declaredCount = currentData[table].count;
       const matches = filter ? names.filter((n) => n.includes(filter)) : names;
       if (filter && matches.length === 0) return;
       found = true;
@@ -595,6 +635,13 @@
         ? `<span class="table-actions">${editTableBtn}${delTableBtn}</span>`
         : "";
 
+      const countField = isUnlocked
+        ? `<div class="count-field">عدد الأشخاص:
+             <input type="number" min="0" value="${declaredCount}"
+               onchange="updateTableCount('${table.replace(/'/g, "\\'")}', this.value)" />
+           </div>`
+        : `<div class="count-field-readonly">عدد الأشخاص: ${declaredCount}</div>`;
+
       const addGuestRow = isUnlocked
         ? `<div class="add-guest-row">
              <input type="text" id="add-guest-${table}" placeholder="اسم معزوم جديد" />
@@ -604,6 +651,7 @@
 
       card.innerHTML = `
         <h3>طاولة ${table}${tableActions}</h3>
+        ${countField}
         <ul>${listHtml}</ul>
         ${addGuestRow}
       `;
@@ -629,7 +677,7 @@
       return;
     }
     const names = namesRaw ? namesRaw.split(".").map((n) => n.trim()).filter(Boolean) : [];
-    currentData[num] = names;
+    currentData[num] = { count: names.length, names };
     numInput.value = "";
     namesInput.value = "";
     await saveData();
@@ -638,6 +686,12 @@
   async function deleteTable(table) {
     if (!confirm(`متأكد من حذف الطاولة "${table}"؟`)) return;
     delete currentData[table];
+    await saveData();
+  }
+
+  async function updateTableCount(table, value) {
+    const n = parseInt(value, 10);
+    currentData[table].count = isNaN(n) || n < 0 ? 0 : n;
     await saveData();
   }
 
@@ -674,12 +728,12 @@
     const input = document.getElementById(`add-guest-${table}`);
     const name = input.value.trim();
     if (!name) return;
-    currentData[table].push(name);
+    currentData[table].names.push(name);
     await saveData();
   }
 
   async function deleteGuest(table, name) {
-    currentData[table] = currentData[table].filter((n) => n !== name);
+    currentData[table].names = currentData[table].names.filter((n) => n !== name);
     await saveData();
   }
 
@@ -688,8 +742,8 @@
 
   function computeLength(tableKey) {
     if (!tableKey || !currentData[tableKey]) return 60;
-    const count = currentData[tableKey].length;
-    return Math.min(50 + count * 6, 170);
+    const count = currentData[tableKey].count || 0;
+    return Math.min(40 + count * 4, 140);
   }
 
   function renderPlacements() {
@@ -700,6 +754,7 @@
       const p = placements[tableKey];
       const length = computeLength(tableKey);
       const thickness = 30;
+      const count = currentData[tableKey].count || 0;
 
       const box = document.createElement("div");
       box.className = "table-box " + (isUnlocked ? "editable" : "locked-view");
@@ -708,7 +763,7 @@
       box.style.width = length + "px";
       box.style.height = thickness + "px";
       box.style.transform = `translate(-50%, -50%) rotate(${p.rot || 0}deg)`;
-      box.textContent = tableKey;
+      box.innerHTML = `<div class="box-name">${tableKey}</div><div class="box-count">${count} شخص</div>`;
       box.dataset.table = tableKey;
 
       if (isUnlocked) {
