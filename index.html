@@ -648,28 +648,49 @@
 
     if (n === 0) return;
 
-    const angleStart = -80; // درجات (فوق)
-    const angleEnd = 80;    // درجات (تحت)
-    const thickness = 32;   // عرض ثابت للمستطيل
-    const gap = 8;          // مسافة بين ساحة الرقص وأول صف طاولات
-    const ringGap = 14;     // مسافة بين الصف الأمامي والصف الخلفي (ورا بعض)
+    const thickness = 32;    // عرض ثابت للمستطيل (الاتجاه العرضي)
+    const boxGap = 6;        // مسافة صغيرة بين مربع وجاره بنفس الصف
+    const gap = 8;           // مسافة بين ساحة الرقص وأول صف طاولات
+    const ringGap = 12;      // مسافة بين الصف الأمامي والخلفي
+    const maxSpreadDeg = 160; // أقصى انتشار (-80 لـ 80) لو العدد كبير
 
-    // صفّين: أمامي (0..n-1) وخلفي (n..2n-1) بنفس الزوايا، وراء بعضهم البعض
-    for (let ring = 0; ring < 2; ring++) {
+    // نحسب طول كل مربع مسبقاً بالصفين، ونعرف أطول طول بالصف الأمامي
+    function computeLength(assignedTable) {
+      if (!assignedTable || !currentData[assignedTable]) return 50;
+      const count = currentData[assignedTable].length;
+      return Math.min(50 + count * 6, 170);
+    }
+
+    let maxFrontLength = 50;
+    for (let i = 0; i < n; i++) {
+      const len = computeLength(seatingAssignments[i]);
+      if (len > maxFrontLength) maxFrontLength = len;
+    }
+
+    const frontRadius = r0 + gap + maxFrontLength / 2;
+    const backRadius = r0 + gap + maxFrontLength + ringGap + 40; // تقدير معقول لنص طول الصف الخلفي
+
+    function angularStepDeg(radius) {
+      const stepRad = (thickness + boxGap) / radius;
+      return Math.max(5, stepRad * (180 / Math.PI));
+    }
+
+    function drawRing(ringStartRadius, refRadiusForSpacing, indexOffset) {
+      const step = angularStepDeg(refRadiusForSpacing);
+      const requiredSpread = (n - 1) * step;
+      const spread = Math.min(requiredSpread, maxSpreadDeg);
+      const angleStart = -spread / 2;
+      const angleEnd = spread / 2;
+
       for (let i = 0; i < n; i++) {
-        const squareIndex = ring === 0 ? i : n + i;
+        const squareIndex = indexOffset + i;
         const t = n > 1 ? i / (n - 1) : 0.5;
-        const angleDeg = angleStart + t * (angleEnd - angleStart);
+        const angleDeg = n > 1 ? angleStart + t * (angleEnd - angleStart) : 0;
         const angleRad = (angleDeg * Math.PI) / 180;
 
         const assignedTable = seatingAssignments[squareIndex];
         const isAssigned = assignedTable && currentData[assignedTable];
-        const count = isAssigned ? currentData[assignedTable].length : 0;
-
-        let length = isAssigned ? Math.min(50 + count * 6, 170) : 50;
-
-        // نصف قطر بداية هالصف (الأمامي يلصق بساحة الرقص، الخلفي بعده بمسافة)
-        const ringStartRadius = ring === 0 ? r0 + gap : r0 + gap + 170 + ringGap;
+        const length = computeLength(assignedTable);
         const midRadius = ringStartRadius + length / 2;
 
         const x = cx + midRadius * Math.cos(angleRad);
@@ -688,6 +709,9 @@
         floorPlan.appendChild(bar);
       }
     }
+
+    drawRing(r0 + gap, frontRadius, 0);
+    drawRing(r0 + gap + maxFrontLength + ringGap, backRadius, n);
   }
 
   function openTablePicker(squareIndex) {
