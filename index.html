@@ -57,6 +57,6 @@ function renderCircleSlots(){floorPlan.querySelectorAll(".slot-box").forEach(e=>
 function openCircleSlotPicker(i){if(!isUnlocked)return;const current=circleSlots[i],used=getUsedTableKeys(),available=sortedTableKeys().filter(k=>!used.has(k)||k===current);modalBox.innerHTML=`<h3>اختر الطاولة لهالمكان</h3>${available.length?available.map(k=>`<button class="modal-option" onclick="assignCircleSlot(${i},'${k.replace(/'/g,"\\'")}')">${k} (${currentData[k].count||0} شخص)</button>`).join(""):'<p style="text-align:center;color:#777">كل الطاولات مضافة مسبقاً</p>'}<button class="modal-close" onclick="closeModal()">إغلاق</button>`;modalOverlay.style.display="flex"}
 async function assignCircleSlot(i,k){circleSlots[i]=k;await saveSeatingDoc();closeModal();renderCircleSlots()}
 function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!placements[AISLE_KEY]}
-async function addAisleToMap(){if(!isUnlocked||placements[AISLE_KEY])return;placements[AISLE_KEY]={x:50,y:15,rot:0};await saveSeatingDoc();renderPlacements()}
+async function addAisleToMap(){if(!isUnlocked||placements[AISLE_KEY])return;placements[AISLE_KEY]={x:50,y:15,rot:0};try{await seatingRef.set({placements,circleSlots});renderPlacements()}catch(e){console.error(e);delete placements[AISLE_KEY];alert("تعذر حفظ ممر العروسين. تحقق من اتصال Firebase.");renderPlacements()}}
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});startListening();
 </script></body></html>
