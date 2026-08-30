@@ -332,6 +332,7 @@
     <div id="search-view">
       <input type="text" id="search" placeholder="اكتب الاسم هنا..." />
       <p id="total-count" class="total-count-label"></p>
+      <p id="total-tables-count" class="total-count-label"></p>
 
       <div id="admin-panel" class="admin-panel" style="display:none;">
         <h3>➕ إضافة طاولة جديدة</h3>
@@ -343,12 +344,14 @@
       </div>
 
       <p class="dev-credit">Developer: Anwar Abo Saad</p>
+      <p class="dev-credit">Designer: Mazen Ghanoum</p>
       <div id="results" class="tables-container"></div>
     </div>
 
     <!-- ===== صفحة خريطة الطاولات ===== -->
     <div id="seating-view">
       <p class="dev-credit">Developer: Anwar Abo Saad</p>
+      <p class="dev-credit">Designer: Mazen Ghanoum</p>
       <div id="seating-toolbar" style="display:none;">
         <button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button>
       </div>
@@ -419,6 +422,7 @@
 
   const resultsDiv = document.getElementById("results");
   const totalCountEl = document.getElementById("total-count");
+  const totalTablesCountEl = document.getElementById("total-tables-count");
   const searchInput = document.getElementById("search");
   const statusEl = document.getElementById("save-status");
   const lockBtn = document.getElementById("lock-btn");
@@ -697,6 +701,12 @@
       0
     );
     totalCountEl.textContent = `إجمالي عدد الأشخاص: ${total}`;
+
+    const totalTables = Object.values(currentData).reduce(
+      (sum, t) => sum + (typeof t.tablesCount === "number" ? t.tablesCount : 0),
+      0
+    );
+    totalTablesCountEl.textContent = `إجمالي عدد الطاولات: ${totalTables}`;
   }
 
   searchInput.addEventListener("input", function () {
