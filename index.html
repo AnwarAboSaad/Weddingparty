@@ -50,14 +50,14 @@ function startListening(){
     if(s.exists&&s.data().tables){currentData=normalizeTables(s.data().tables);statusEl.textContent=""}
     else{currentData=normalizeTables(JSON.parse(JSON.stringify(defaultTables)));await tablesRef.set({tables:currentData})}
     cleanupSeatingAssignments();
-    renderCurrentView();
+    if(!dragState)renderCurrentView(); // ما نعيد الرسم وقت ما يكون في سحب شغال، منشان ما ننكش العنصر من تحت الإصبع
   },()=>statusEl.textContent="⚠ خطأ بالاتصال");
 
   seatingRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
     placements=d.placements||{};
     circleSlots=d.circleSlots||{};
-    if(currentView==="seating"){renderCircleSlots();renderPlacements()}
+    if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
   },(e)=>console.error(e));
 }
 
@@ -102,25 +102,28 @@ function renderPlacements(){
     const p=placements[k],aisle=k===AISLE_KEY;
     if(!aisle&&!currentData[k])return;
     const el=document.createElement("div");
+    const heightPx=aisle?12:15;
     el.className=(aisle?"aisle-box ":"table-box ")+(isUnlocked?"editable":"locked-view");
     el.style.left=p.x+"%";el.style.top=p.y+"%";
     el.style.width=(aisle?200:computeLength(k))+"px";
-    el.style.height=(aisle?12:15)+"px";
+    el.style.height=heightPx+"px";
     el.style.transform=`translate(-50%,-50%) rotate(${p.rot||0}deg)`;
     el.dataset.table=k;
     if(aisle)el.textContent="ممر العروسين";
     else{const t=currentData[k];el.innerHTML=`<div class="box-name">${k}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`}
     if(isUnlocked){
       el.addEventListener("pointerdown",onBoxPointerDown);
+      // نبعّد الأزرار عن الشريط حسب سماكته، منشان ما تصير فوق منطقة السحب وتلتقط اللمسة بالغلط
+      const btnOffset=-(heightPx/2+14);
       [["⟳",-10,ROTATE_STEP],["⟲",16,-ROTATE_STEP]].forEach(([txt,left,d])=>{
         const b=document.createElement("div");
-        b.className="box-ctrl box-rotate";b.textContent=txt;b.style.left=left+"px";b.style.top="-10px";
+        b.className="box-ctrl box-rotate";b.textContent=txt;b.style.left=left+"px";b.style.top=btnOffset+"px";
         b.onpointerdown=e=>e.stopPropagation();
         b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
         el.appendChild(b);
       });
       const d=document.createElement("div");
-      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right=d.style.top="-10px";
+      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
       d.onpointerdown=e=>e.stopPropagation();
       d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
       el.appendChild(d);
@@ -161,6 +164,7 @@ async function onBoxPointerUp(){
     await saveSeatingField(`placements.${s.tableKey}.y`,s.currentY);
   }
   dragState=null;
+  if(currentView==="seating"){renderCircleSlots();renderPlacements()}
 }
 async function rotateTable(k,d){
   const newRot=(((placements[k].rot||0)+d)%360+360)%360;
@@ -169,6 +173,8 @@ async function rotateTable(k,d){
   renderPlacements();
 }
 async function removeTableFromMap(k){
+  const label=k===AISLE_KEY?"ممر العروسين":k;
+  if(!confirm(`متأكد إنك بدك تشيل "${label}" من الخريطة؟`))return;
   delete placements[k];
   await saveSeatingField(`placements.${k}`,FieldValue.delete());
   renderPlacements();
