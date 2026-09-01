@@ -452,8 +452,10 @@ function updateAisleButtonState(){const b=$("add-aisle-btn");if(b){b.disabled=fa
 async function addAisleToMap(){
   if(!isUnlocked)return alert("افتح القفل 🔒 أولاً");
   try{
+    // احفظ الممر كحقل فرعي داخل placements حتى لا نستبدل أو نحذف أي طاولة أخرى.
     const snap=await seatingRef.get();
     const remote=snap.exists&&snap.data().placements&&typeof snap.data().placements==="object"?snap.data().placements:{};
+
     if(remote[AISLE_KEY]){
       placements[AISLE_KEY]={...remote[AISLE_KEY]};
       cacheSeating();
@@ -461,15 +463,22 @@ async function addAisleToMap(){
       return;
     }
 
-    // حفظ الممر فقط داخل placements، بدون استبدال أي طاولة أو أي عنصر آخر.
     const aisle={x:50,y:15,rot:0};
-    await seatingRef.set({placements:{...remote,[AISLE_KEY]:aisle}},{merge:true});
-    placements[AISLE_KEY]={...aisle};
+    // FieldPath يحدّث __AISLE__ فقط، ويحافظ على جميع الطاولات الموجودة.
+    await seatingRef.update(new firebase.firestore.FieldPath("placements",AISLE_KEY),aisle);
+    placements[AISLE_KEY]=aisle;
     cacheSeating();
     renderPlacements();
   }catch(e){
     console.error("addAisleToMap failed",e);
-    alert("تعذر إضافة الممر. لم يتم تغيير أي بيانات.");
+    // إذا كان مستند الخريطة موجوداً لكن placements غير موجود، استخدم الحفظ الآمن الحالي.
+    try{
+      if(await savePlacement(AISLE_KEY,{x:50,y:15,rot:0}))renderPlacements();
+      else alert("تعذر حفظ الممر. لم يتم تغيير أي بيانات.");
+    }catch(e2){
+      console.error("aisle fallback failed",e2);
+      alert("تعذر حفظ الممر. لم يتم تغيير أي بيانات.");
+    }
   }
 }
 
