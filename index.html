@@ -51,61 +51,53 @@ function loadSeatingCache(){
 // يحفظ التعديل بعد قراءة آخر نسخة من Firebase داخل Transaction.
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
+  const k=String(key);
+  const next={...(placements[k]||{}),...patch};
   try{
-    const k=String(key);
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(tablesRef);
-      const remote=snap.exists&&snap.data().mapPlacements&&typeof snap.data().mapPlacements==="object"
-        ?snap.data().mapPlacements:{};
-      const merged={...remote,[k]:{...(remote[k]||{}),...patch}};
-      // نحفظ الخريطة داخل نفس مستند البيانات الذي يعمل عليه التطبيق أصلاً.
-      // هذا يتجنب مشكلة صلاحيات مستند seating-layout ويضمن بقاء الخريطة بعد التحديث.
-      tx.set(tablesRef,{mapPlacements:merged},{merge:true});
-    });
-    placements[k]={...(placements[k]||{}),...patch};
-    cacheSeating();
+    // لا نستخدم Transaction هنا. الحركة/التدوير يجب أن يكتبا الحقل المطلوب
+    // مباشرةً، لأن Transaction على الهاتف قد يفشل أو يعاد تشغيله بسبب تغيّر
+    // snapshot، وهذا كان يجعل التعديل يرجع لمكانه القديم بعد التحديث.
+    await seatingRef.set({placements:{[k]:patch}},{merge:true});
+    placements[k]=next;
     statusEl.textContent="✓ تم حفظ تعديل الخريطة";
+    cacheSeating();
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
+    statusEl.textContent="⚠ تعذر حفظ تعديل الخريطة";
     cacheSeating();
-    statusEl.textContent="⚠ تعذر الحفظ على Firebase — التعديل محفوظ محلياً";
     return false;
   }
 }
-
 async function deletePlacement(key){
+  const k=String(key);
   try{
-    await tablesRef.update(new firebase.firestore.FieldPath("mapPlacements",String(key)),FieldValue.delete());
-    delete placements[String(key)];
+    await seatingRef.update(new firebase.firestore.FieldPath("placements",k),FieldValue.delete());
+    delete placements[k];
     cacheSeating();
-    statusEl.textContent="✓ تم حفظ حذف العنصر من الخريطة";
     return true;
   }catch(e){
     console.error("deletePlacement failed",e);
-    cacheSeating();
     statusEl.textContent="⚠ تعذر حفظ حذف العنصر";
+    cacheSeating();
     return false;
   }
 }
-
 async function saveCircleSlot(i,value,remove=false){
   try{
-    const field=new firebase.firestore.FieldPath("mapCircleSlots",String(i));
+    const field=new firebase.firestore.FieldPath("circleSlots",String(i));
     if(remove){
-      await tablesRef.update(field,FieldValue.delete());
+      await seatingRef.update(field,FieldValue.delete());
       delete circleSlots[String(i)];
     }else{
-      await tablesRef.set({mapCircleSlots:{[String(i)]:value}},{merge:true});
+      await seatingRef.set({circleSlots:{[String(i)]:value}},{merge:true});
       circleSlots[String(i)]=value;
     }
     cacheSeating();
-    statusEl.textContent="✓ تم حفظ تعديل توزيع الطاولات";
     return true;
   }catch(e){
     console.error("saveCircleSlot failed",e);
     cacheSeating();
-    statusEl.textContent="⚠ تعذر حفظ تعديل التوزيع";
     return false;
   }
 }
@@ -141,30 +133,20 @@ function startListening(){
   // نقرأ الخريطة بدون اعتبار غياب الحقل = خريطة فارغة.
   // هذا يمنع Snapshot قديم/ناقص من إعادة الطاولات أو الممرات المحذوفة/المضافة.
   loadSeatingCache();
-  // الخريطة محفوظة الآن داخل guest-tables تحت mapPlacements و mapCircleSlots.
-  // إذا كانت هناك خريطة قديمة في seating-layout أو في ذاكرة الهاتف، لا نمسحها.
-  tablesRef.onSnapshot(s=>{
-    const d=s.exists?s.data():{};
-    if(Object.prototype.hasOwnProperty.call(d,"mapPlacements") && d.mapPlacements && typeof d.mapPlacements==="object"){
-      placements=d.mapPlacements;
-    }
-    if(Object.prototype.hasOwnProperty.call(d,"mapCircleSlots") && d.mapCircleSlots && typeof d.mapCircleSlots==="object"){
-      circleSlots=d.mapCircleSlots;
-    }
-    cacheSeating();
-    if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
-  },e=>console.error("map snapshot failed",e));
-
-  // قراءة الخريطة القديمة فقط كترحيل احتياطي؛ لا نكتب فوقها ولا نعتمد عليها للحفظ.
   seatingRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
-    if(!Object.prototype.hasOwnProperty.call(d,"placements") && !Object.prototype.hasOwnProperty.call(d,"circleSlots"))return;
-    // لا نستبدل خريطة جديدة محفوظة داخل guest-tables بخريطة قديمة.
-    if(!Object.keys(placements).length && d.placements && typeof d.placements==="object") placements=d.placements;
-    if(!Object.keys(circleSlots).length && d.circleSlots && typeof d.circleSlots==="object") circleSlots=d.circleSlots;
+    if(Object.prototype.hasOwnProperty.call(d,"placements") && d.placements && typeof d.placements==="object"){
+      placements=d.placements;
+    }
+    if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
+      circleSlots=d.circleSlots;
+    }
     cacheSeating();
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
-  },e=>console.warn("legacy seating-layout unavailable",e));
+  },(e)=>{
+    console.error(e);
+    // عند انقطاع الاتصال لا نمسح الخريطة من الشاشة.
+  });
 }
 
 // حفظ آمن: لا يستبدل خريطة tables كاملة، ولا يسمح بكتابة {} فوق بيانات موجودة.
@@ -257,7 +239,7 @@ async function importBackup(event){
       const merged={...remote,...restoredTables};
       tx.set(tablesRef,{tables:merged},{merge:true});
     });
-    await tablesRef.set({mapPlacements:restoredPlacements,mapCircleSlots:restoredCircleSlots},{merge:true});
+    await seatingRef.set({placements:restoredPlacements,circleSlots:restoredCircleSlots},{merge:true});
     currentData=restoredTables;
     placements={...placements,...restoredPlacements};
     circleSlots={...circleSlots,...restoredCircleSlots};
@@ -353,7 +335,7 @@ function onBoxPointerDown(e){
   const box=e.currentTarget,k=box.dataset.table;
   box.setPointerCapture(e.pointerId);
   box.classList.add("dragging");
-  dragState={tableKey:k,box,rect:floorPlan.getBoundingClientRect(),startX:e.clientX,startY:e.clientY,origX:placements[k].x,origY:placements[k].y};
+  dragState={tableKey:k,box,rect:floorPlan.getBoundingClientRect(),startX:e.clientX,startY:e.clientY,origX:Number(placements[k]?.x)||50,origY:Number(placements[k]?.y)||50,currentX:Number(placements[k]?.x)||50,currentY:Number(placements[k]?.y)||50};
   box.addEventListener("pointermove",onBoxPointerMove);
   box.addEventListener("pointerup",onBoxPointerUp);
   box.addEventListener("pointercancel",onBoxPointerUp);
@@ -373,8 +355,6 @@ async function onBoxPointerUp(){
   s.box.removeEventListener("pointerup",onBoxPointerUp);
   s.box.removeEventListener("pointercancel",onBoxPointerUp);
   if(s.currentX!==undefined){
-    placements[s.tableKey].x=s.currentX;
-    placements[s.tableKey].y=s.currentY;
     await savePlacement(s.tableKey,{x:s.currentX,y:s.currentY});
   }
   dragState=null;
