@@ -53,11 +53,17 @@ function loadSeatingCache(){
 async function savePlacement(key,patch){
   const k=String(key);
   const next={...(placements[k]||{}),...patch};
+  const field=new firebase.firestore.FieldPath("placements",k);
   try{
-    // لا نستخدم Transaction هنا. الحركة/التدوير يجب أن يكتبا الحقل المطلوب
-    // مباشرةً، لأن Transaction على الهاتف قد يفشل أو يعاد تشغيله بسبب تغيّر
-    // snapshot، وهذا كان يجعل التعديل يرجع لمكانه القديم بعد التحديث.
-    await seatingRef.set({placements:{[k]:patch}},{merge:true});
+    // مهم: set({placements:{[k]:...}},{merge:true}) يستبدل خريطة placements
+    // الفرعية كلها، وبالتالي كان أي تعديل يمسح بقية الطاولات/الممر.
+    // نكتب الحقل المتداخل نفسه فقط.
+    const snap=await seatingRef.get();
+    if(snap.exists){
+      await seatingRef.update(field,next);
+    }else{
+      await seatingRef.set({placements:{[k]:next}},{merge:true});
+    }
     placements[k]=next;
     statusEl.textContent="✓ تم حفظ تعديل الخريطة";
     cacheSeating();
@@ -85,13 +91,16 @@ async function deletePlacement(key){
 }
 async function saveCircleSlot(i,value,remove=false){
   try{
-    const field=new firebase.firestore.FieldPath("circleSlots",String(i));
+    const key=String(i);
+    const field=new firebase.firestore.FieldPath("circleSlots",key);
+    const snap=await seatingRef.get();
     if(remove){
-      await seatingRef.update(field,FieldValue.delete());
-      delete circleSlots[String(i)];
+      if(snap.exists) await seatingRef.update(field,FieldValue.delete());
+      delete circleSlots[key];
     }else{
-      await seatingRef.set({circleSlots:{[String(i)]:value}},{merge:true});
-      circleSlots[String(i)]=value;
+      if(snap.exists) await seatingRef.update(field,value);
+      else await seatingRef.set({circleSlots:{[key]:value}},{merge:true});
+      circleSlots[key]=value;
     }
     cacheSeating();
     return true;
