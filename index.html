@@ -20,7 +20,7 @@ const firebaseConfig={apiKey:"AIzaSyDRGodtyKvHhIyO33AeSHOFcTTzkEKEXWE",authDomai
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore(),tablesRef=db.collection("app").doc("guest-tables"),seatingRef=db.collection("app").doc("seating-layout");
 const FieldValue=firebase.firestore.FieldValue;
 const defaultTables={};
-let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
+let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const pendingPlacementWrites={};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
 const DEFAULT_AISLE={x:50,y:15,rot:0};
 const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box");
 
@@ -53,28 +53,30 @@ function loadSeatingCache(){
 // يحفظ التعديل بعد قراءة آخر نسخة من Firebase داخل Transaction.
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
+  const k=String(key);
+  // حدّث الشاشة والنسخة المحلية فوراً، ثم احفظ الحقول المعدّلة فقط في Firestore.
+  placements[k]={...(placements[k]||{}),...patch};
+  cacheSeating();
+  pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
   try{
-    // نقرأ آخر نسخة من Firebase داخل Transaction ثم نضيف/نعدّل هذا العنصر فقط.
-    // مهم: لا نستخدم set({placements:{...}}) لأن ذلك قد يستبدل بقية الخريطة.
-    const k=String(key);
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      const remote=snap.exists&&snap.data().placements&&typeof snap.data().placements==="object"
-        ?snap.data().placements:{};
-      const merged={...remote,[k]:{...(remote[k]||{}),...patch}};
-      tx.set(seatingRef,{placements:merged},{merge:true});
+    const updates={};
+    Object.keys(patch).forEach(field=>{
+      updates[new firebase.firestore.FieldPath("placements",k,field)]=patch[field];
     });
-    placements[k]={...(placements[k]||{}),...patch};
+    await seatingRef.update(updates);
+    delete pendingPlacementWrites[k];
     cacheSeating();
+    statusEl.textContent="✓ تم حفظ التعديل";
+    setTimeout(()=>{if(statusEl.textContent==="✓ تم حفظ التعديل")statusEl.textContent=""},1200);
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    // لا نمسح أي بيانات محلية عند فشل الاتصال.
+    // إذا فشل الحفظ السحابي، لا نرجّع العنصر لمكانه القديم؛ يبقى محفوظاً محلياً.
     cacheSeating();
+    statusEl.textContent="⚠ لم يُحفظ على Firebase — سيبقى محلياً";
     return false;
   }
 }
-
 async function deletePlacement(key){
   try{
     await seatingRef.update(new firebase.firestore.FieldPath("placements",String(key)),FieldValue.delete());
@@ -141,7 +143,12 @@ function startListening(){
   seatingRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
     if(Object.prototype.hasOwnProperty.call(d,"placements") && d.placements && typeof d.placements==="object"){
-      placements=d.placements;
+      const remote=d.placements;
+      // لا تسمح لـ snapshot قديم أن يعيد عنصراً تم تحريكه للتو إلى مكانه السابق.
+      placements={...remote};
+      Object.keys(pendingPlacementWrites).forEach(k=>{
+        placements[k]={...(placements[k]||{}),...pendingPlacementWrites[k]};
+      });
     }
     if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
       circleSlots=d.circleSlots;
