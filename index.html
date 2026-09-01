@@ -11,7 +11,7 @@
 <body>
 <div id="app"><header><button id="lock-btn" class="icon-btn" onclick="toggleLock()">🔒</button><h1>👰🤵 Abdo & Sulaf</h1><button id="chart-btn" class="icon-btn" onclick="toggleView()">🪑</button></header><div style="text-align:center;margin-bottom:10px"><span id="save-status"></span></div>
 <div id="search-view"><input id="search" placeholder="اكتب الاسم هنا..."><div class="backup-panel"><button class="backup-btn backup-download" onclick="downloadBackup()">⬇️ تنزيل نسخة احتياطية</button><button class="backup-btn backup-import" onclick="document.getElementById('backup-file').click()">⬆️ استيراد نسخة احتياطية</button><input id="backup-file" class="backup-input" type="file" accept="application/json,.json" onchange="importBackup(event)"></div><p id="total-count" class="total-count-label"></p><p id="total-tables-count" class="total-count-label"></p><div id="admin-panel" class="admin-panel" style="display:none"><h3>➕ إضافة طاولة جديدة</h3><div class="row"><input id="new-table-num" placeholder="رقم/اسم الطاولة"><input id="new-table-names" placeholder="الأسماء (أفصل بنقطة)"><button onclick="addTable()">إضافة</button></div></div><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="results" class="tables-container"></div></div>
-<div id="seating-view"><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button><button id="add-aisle-btn" onclick="addAisleToMap()">+ إضافة ممر العروسين</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
+<div id="seating-view"><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
 <div id="modal-overlay"><div id="modal-box"></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
@@ -108,7 +108,7 @@ async function saveCircleSlot(i,value,remove=false){
 function toggleLock(){if(isUnlocked){isUnlocked=false;updateLockUI();renderCurrentView();return}const v=prompt("أدخل كلمة السر للفتح:");if(v===null)return;if(v===ADMIN_PASSWORD){isUnlocked=true;updateLockUI();renderCurrentView()}else alert("كلمة السر غير صحيحة")}
 function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none"}
 function toggleView(){currentView=currentView==="search"?"seating":"search";searchView.style.display=currentView==="search"?"block":"none";seatingView.style.display=currentView==="seating"?"block":"none";chartBtn.textContent=currentView==="search"?"🪑":"🔎";updateLockUI();renderCurrentView()}
-function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
+function renderCurrentView(){if(currentView==="search"){renderTables(searchInput.value.trim()||null)}else{drawFloorPlan();renderCircleSlots();renderPlacements();ensureAislePlacement().then(()=>{if(currentView==="seating"&&!dragState)renderPlacements()})}}
 function drawFloorPlan(){const w=floorPlan.clientWidth,h=floorPlan.clientHeight;if(!w||!h)return;floorSvg.setAttribute("viewBox",`0 0 ${w} ${h}`);const cy=h/2,r=Math.min(w,h)*.22,cx=4;danceGeo={cx,cy,r};floorSvg.innerHTML=`<path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none"/>`;danceLabel.style.left=cx+r*.5+"px";danceLabel.style.top=cy+"px"}
 addEventListener("resize",()=>{if(currentView==="seating"){drawFloorPlan();renderCircleSlots();renderPlacements()}});
 
@@ -302,10 +302,10 @@ function renderPlacements(){
     const p=placements[k],aisle=k===AISLE_KEY;
     if(!aisle&&!currentData[k])return;
     const el=document.createElement("div");
-    const heightPx=aisle?12:15;
+    const heightPx=aisle?16:15;
     el.className=(aisle?"aisle-box ":"table-box ")+(isUnlocked?"editable":"locked-view");
     el.style.left=p.x+"%";el.style.top=p.y+"%";
-    el.style.width=(aisle?200:computeLength(k))+"px";
+    el.style.width=(aisle?220:computeLength(k))+"px";
     el.style.height=heightPx+"px";
     el.style.transform=`translate(-50%,-50%) rotate(${p.rot||0}deg)`;
     el.dataset.table=k;
@@ -313,7 +313,6 @@ function renderPlacements(){
     else{const t=currentData[k];el.innerHTML=`<div class="box-name">${k}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`}
     if(isUnlocked){
       el.addEventListener("pointerdown",onBoxPointerDown);
-      // نبعّد الأزرار عن الشريط حسب سماكته، منشان ما تصير فوق منطقة السحب وتلتقط اللمسة بالغلط
       const btnOffset=-(heightPx/2+14);
       [["⟳",-10,ROTATE_STEP],["⟲",16,-ROTATE_STEP]].forEach(([txt,left,d])=>{
         const b=document.createElement("div");
@@ -322,15 +321,17 @@ function renderPlacements(){
         b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
         el.appendChild(b);
       });
-      const d=document.createElement("div");
-      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
-      d.onpointerdown=e=>e.stopPropagation();
-      d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
-      el.appendChild(d);
+      // الممر عنصر دائم بالخريطة، لذلك لا نعرض زر حذف له.
+      if(!aisle){
+        const d=document.createElement("div");
+        d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
+        d.onpointerdown=e=>e.stopPropagation();
+        d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
+        el.appendChild(d);
+      }
     }
     floorPlan.appendChild(el);
   });
-  updateAisleButtonState();
 }
 
 function onBoxPointerDown(e){
@@ -448,38 +449,14 @@ async function assignCircleSlot(i,k){
   }
 }
 
-function updateAisleButtonState(){const b=$("add-aisle-btn");if(b){b.disabled=false;b.textContent=placements[AISLE_KEY]?"✓ الممر موجود":"+ إضافة ممر العروسين"}}
-async function addAisleToMap(){
-  if(!isUnlocked)return alert("افتح القفل 🔒 أولاً");
-  try{
-    // احفظ الممر كحقل فرعي داخل placements حتى لا نستبدل أو نحذف أي طاولة أخرى.
-    const snap=await seatingRef.get();
-    const remote=snap.exists&&snap.data().placements&&typeof snap.data().placements==="object"?snap.data().placements:{};
-
-    if(remote[AISLE_KEY]){
-      placements[AISLE_KEY]={...remote[AISLE_KEY]};
-      cacheSeating();
-      renderPlacements();
-      return;
-    }
-
-    const aisle={x:50,y:15,rot:0};
-    // FieldPath يحدّث __AISLE__ فقط، ويحافظ على جميع الطاولات الموجودة.
-    await seatingRef.update(new firebase.firestore.FieldPath("placements",AISLE_KEY),aisle);
-    placements[AISLE_KEY]=aisle;
-    cacheSeating();
-    renderPlacements();
-  }catch(e){
-    console.error("addAisleToMap failed",e);
-    // إذا كان مستند الخريطة موجوداً لكن placements غير موجود، استخدم الحفظ الآمن الحالي.
-    try{
-      if(await savePlacement(AISLE_KEY,{x:50,y:15,rot:0}))renderPlacements();
-      else alert("تعذر حفظ الممر. لم يتم تغيير أي بيانات.");
-    }catch(e2){
-      console.error("aisle fallback failed",e2);
-      alert("تعذر حفظ الممر. لم يتم تغيير أي بيانات.");
-    }
-  }
+let aisleEnsurePromise=null;
+async function ensureAislePlacement(){
+  if(placements[AISLE_KEY])return true;
+  if(aisleEnsurePromise)return aisleEnsurePromise;
+  // الممر موجود دائماً كعنصر مستقل. إذا لم يكن مسجلاً في الخريطة القديمة،
+  // ننشئه مرة واحدة فقط في موضع ابتدائي، من دون لمس أي طاولة أو توزيع.
+  aisleEnsurePromise=savePlacement(AISLE_KEY,{x:50,y:15,rot:0}).finally(()=>{aisleEnsurePromise=null});
+  return aisleEnsurePromise;
 }
 
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
