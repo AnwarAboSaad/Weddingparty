@@ -26,8 +26,33 @@ const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("
 // === حفظ آمن للخريطة ===
 // كل تعديل على الخريطة يُحفظ داخل Transaction بعد قراءة آخر نسخة من Firebase.
 // لا نستبدل وثيقة seating-layout كاملة، ولا نحذف أي طاولة أو ممر تلقائياً.
-async function savePlacement(key, patch){
+function cacheSeating(){
   try{
+    localStorage.setItem("wedding_seating_cache_v3",JSON.stringify({
+      placements:placements||{},
+      circleSlots:circleSlots||{},
+      savedAt:new Date().toISOString()
+    }));
+  }catch(e){console.warn("local seating cache unavailable",e)}
+}
+
+function loadSeatingCache(){
+  try{
+    const raw=localStorage.getItem("wedding_seating_cache_v3");
+    if(!raw)return;
+    const c=JSON.parse(raw);
+    if(c&&typeof c==="object"){
+      if(c.placements&&typeof c.placements==="object")placements=c.placements;
+      if(c.circleSlots&&typeof c.circleSlots==="object")circleSlots=c.circleSlots;
+    }
+  }catch(e){console.warn("local seating cache invalid",e)}
+}
+
+// يحفظ التعديل بعد قراءة آخر نسخة من Firebase داخل Transaction.
+// مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
+async function savePlacement(key,patch){
+  try{
+    let saved;
     await db.runTransaction(async tx=>{
       const snap=await tx.get(seatingRef);
       const d=snap.exists?snap.data():{};
@@ -35,12 +60,14 @@ async function savePlacement(key, patch){
       const next={...remote};
       const old=next[key]&&typeof next[key]==="object"?next[key]:{};
       next[key]={...old,...patch};
+      saved=next;
       tx.set(seatingRef,{placements:next},{merge:true});
-      placements=next;
     });
+    placements=saved||placements;
+    cacheSeating();
     return true;
   }catch(e){
-    console.error(e);
+    console.error("savePlacement failed",e);
     statusEl.textContent="⚠ فشل حفظ الخريطة";
     setTimeout(()=>statusEl.textContent="",2500);
     return false;
@@ -49,18 +76,21 @@ async function savePlacement(key, patch){
 
 async function deletePlacement(key){
   try{
+    let saved;
     await db.runTransaction(async tx=>{
       const snap=await tx.get(seatingRef);
       const d=snap.exists?snap.data():{};
       const remote=d.placements&&typeof d.placements==="object"?d.placements:{};
       const next={...remote};
       delete next[key];
+      saved=next;
       tx.set(seatingRef,{placements:next},{merge:true});
-      placements=next;
     });
+    placements=saved||{};
+    cacheSeating();
     return true;
   }catch(e){
-    console.error(e);
+    console.error("deletePlacement failed",e);
     statusEl.textContent="⚠ فشل حفظ الخريطة";
     setTimeout(()=>statusEl.textContent="",2500);
     return false;
@@ -69,19 +99,23 @@ async function deletePlacement(key){
 
 async function saveCircleSlot(i,value,remove=false){
   try{
+    let saved;
     await db.runTransaction(async tx=>{
       const snap=await tx.get(seatingRef);
       const d=snap.exists?snap.data():{};
       const remote=d.circleSlots&&typeof d.circleSlots==="object"?d.circleSlots:{};
       const next={...remote};
-      if(remove) delete next[String(i)];
-      else next[String(i)]=value;
+      const key=String(i);
+      if(remove) delete next[key];
+      else next[key]=value;
+      saved=next;
       tx.set(seatingRef,{circleSlots:next},{merge:true});
-      circleSlots=next;
     });
+    circleSlots=saved||circleSlots;
+    cacheSeating();
     return true;
   }catch(e){
-    console.error(e);
+    console.error("saveCircleSlot failed",e);
     statusEl.textContent="⚠ فشل حفظ الخريطة";
     setTimeout(()=>statusEl.textContent="",2500);
     return false;
@@ -116,12 +150,23 @@ function startListening(){
     if(!dragState)renderCurrentView();
   },e=>{console.error(e);statusEl.textContent="⚠ خطأ بالاتصال"});
 
+  // نقرأ الخريطة بدون اعتبار غياب الحقل = خريطة فارغة.
+  // هذا يمنع Snapshot قديم/ناقص من إعادة الطاولات أو الممرات المحذوفة/المضافة.
+  loadSeatingCache();
   seatingRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
-    placements=d.placements&&typeof d.placements==="object"?d.placements:{};
-    circleSlots=d.circleSlots&&typeof d.circleSlots==="object"?d.circleSlots:{};
+    if(Object.prototype.hasOwnProperty.call(d,"placements") && d.placements && typeof d.placements==="object"){
+      placements=d.placements;
+    }
+    if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
+      circleSlots=d.circleSlots;
+    }
+    cacheSeating();
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
-  },(e)=>console.error(e));
+  },(e)=>{
+    console.error(e);
+    // عند انقطاع الاتصال لا نمسح الخريطة من الشاشة.
+  });
 }
 
 // حفظ آمن: لا يستبدل خريطة tables كاملة، ولا يسمح بكتابة {} فوق بيانات موجودة.
@@ -341,17 +386,18 @@ async function onBoxPointerUp(){
   if(currentView==="seating"){renderCircleSlots();renderPlacements()}
 }
 async function rotateTable(k,d){
-  const newRot=(((placements[k].rot||0)+d)%360+360)%360;
-  placements[k].rot=newRot;
-  await savePlacement(k,{rot:newRot});
-  renderPlacements();
+  const oldRot=placements[k].rot||0;
+  const newRot=((oldRot+d)%360+360)%360;
+  if(await savePlacement(k,{rot:newRot})){
+    renderPlacements();
+  }
 }
 async function removeTableFromMap(k){
   const label=k===AISLE_KEY?"ممر العروسين":k;
   if(!confirm(`متأكد إنك بدك تشيل "${label}" من الخريطة؟`))return;
-  delete placements[k];
-  await deletePlacement(k);
-  renderPlacements();
+  if(await deletePlacement(k)){
+    renderPlacements();
+  }
 }
 
 function getUsedTableKeys(){const s=new Set();Object.keys(placements).forEach(k=>{if(k!==AISLE_KEY)s.add(k)});Object.values(circleSlots).forEach(k=>s.add(k));return s}
@@ -363,10 +409,10 @@ function openAddTableToMap(){
   modalOverlay.style.display="flex";
 }
 async function addTableToMap(k){
-  placements[k]={x:75,y:50,rot:0};
-  await savePlacement(k,placements[k]);
-  closeModal();
-  renderPlacements();
+  if(await savePlacement(k,{x:75,y:50,rot:0})){
+    closeModal();
+    renderPlacements();
+  }
 }
 
 function renderCircleSlots(){
@@ -410,23 +456,24 @@ function openCircleSlotPicker(i){
   modalOverlay.style.display="flex";
 }
 async function assignCircleSlot(i,k){
+  let ok=false;
   if(k===null){
-    delete circleSlots[i];
-    await saveCircleSlot(i,null,true);
+    ok=await saveCircleSlot(i,null,true);
   }else{
-    circleSlots[i]=k;
-    await saveCircleSlot(i,k,false);
+    ok=await saveCircleSlot(i,k,false);
   }
-  closeModal();
-  renderCircleSlots();
+  if(ok){
+    closeModal();
+    renderCircleSlots();
+  }
 }
 
 function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!placements[AISLE_KEY]}
 async function addAisleToMap(){
   if(!isUnlocked||placements[AISLE_KEY])return;
-  placements[AISLE_KEY]={x:50,y:15,rot:0};
-  await savePlacement(AISLE_KEY,placements[AISLE_KEY]);
-  renderPlacements();
+  if(await savePlacement(AISLE_KEY,{x:50,y:15,rot:0})){
+    renderPlacements();
+  }
 }
 
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
