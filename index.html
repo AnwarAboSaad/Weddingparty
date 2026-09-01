@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>البحث عن المعازيم</title>
 <style>
-*{box-sizing:border-box}body{font-family:Tahoma,sans-serif;background:#f2ece1;margin:0;padding:20px;min-height:100vh}#app{max-width:1200px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}header h1{font-size:20px;margin:0;flex:1;text-align:center;color:#333}.icon-btn{background:#b08d57;color:#fff;border:0;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}#lock-btn.unlocked{background:#4a8c4a}#chart-btn{background:#6a5acd}input{padding:12px;width:100%;font-size:16px;margin-bottom:14px;text-align:right;border:1px solid #ccc;border-radius:8px;font-family:inherit}.tables-container{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}@media(max-width:650px){.tables-container{grid-template-columns:1fr}}.card,.admin-panel{background:#fff;border-radius:12px;box-shadow:0 2px 5px #0002;padding:15px;text-align:right}.card h3{margin:0 0 10px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}.table-actions{display:flex;gap:6px}.del-table,.edit-table{cursor:pointer;font-size:13px;border-radius:6px;padding:2px 8px;background:#fff}.del-table{color:#c0392b;border:1px solid #c0392b}.edit-table{color:#6a5acd;border:1px solid #6a5acd}.count-field{font-size:13px;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}.count-field input{width:60px;padding:4px 6px;margin:0;font-size:13px;text-align:center}.count-field-readonly{font-size:13px;color:#777;margin-bottom:8px}.card ul{list-style:none;padding:0;margin:0}.card li{font-size:15px;margin-bottom:4px;display:flex;justify-content:space-between}.del-guest{color:#c0392b;cursor:pointer;font-weight:bold;padding:0 6px}.highlight{background:#fffa9c;font-weight:bold;padding:2px 5px;border-radius:4px}.no-results{text-align:center;grid-column:1/-1}.add-guest-row{display:flex;gap:6px;margin-top:8px}.add-guest-row input{margin:0}.add-guest-row button,.admin-panel button{background:#4a8c4a;color:#fff;border:0;border-radius:8px;padding:0 14px;cursor:pointer}.admin-panel{margin-bottom:20px}.admin-panel .row{display:flex;gap:10px}.admin-panel .row input:first-child{max-width:120px}#save-status{font-size:12px;color:#4a8c4a}.backup-panel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 14px}.backup-btn{border:0;border-radius:10px;padding:9px 13px;cursor:pointer;font-family:inherit;font-size:13px}.backup-download{background:#b08d57;color:#fff}.backup-import{background:#6a5acd;color:#fff}.backup-input{display:none}#seating-view{display:none}#seating-toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}#add-table-map-btn,#add-aisle-btn{background:#4a8c4a;color:#fff;border:0;border-radius:20px;padding:10px 16px;cursor:pointer}#add-aisle-btn{background:#6a5acd}#add-aisle-btn:disabled{background:#ccc}#floor-plan-wrapper{background:#fff;border-radius:16px;box-shadow:0 2px 8px #0002;overflow:visible;margin-bottom:16px}#floor-plan{position:relative;width:100%;height:760px;background:#fff;touch-action:pinch-zoom}#floor-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.floor-label{position:absolute;color:#b08d57;font-size:13px;text-align:center;z-index:1;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}.total-count-label{text-align:center;color:#555;font-size:14px;font-weight:bold;margin:0 0 12px}.dev-credit{text-align:center;color:#bbb;font-size:10px;line-height:1.05;margin:1px 0 3px}.table-box,.slot-box,.aisle-box{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;user-select:none;z-index:2}.table-box{border-radius:8px;background:#b08d57;color:#fff;box-shadow:0 2px 6px #0003;touch-action:none}.table-box .box-name,.slot-box .box-name{font-size:8px;font-weight:bold}.table-box .box-count,.slot-box .box-count{font-size:6px}.editable{cursor:grab}.dragging{cursor:grabbing;opacity:.85;z-index:10}.box-ctrl{position:absolute;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:11}.box-rotate{background:#6a5acd}.box-delete{background:#c0392b}.slot-box{border-radius:6px}.slot-box.filled{background:#8a6d3b;color:#fff;box-shadow:0 2px 6px #0003}.slot-box.empty{background:#f7f2ea;border:2px dashed #b08d57;color:#b08d57;font-size:10px}.slot-box.clickable,.slot-box.filled.clickable{cursor:pointer}.aisle-box{border-radius:4px;background:repeating-linear-gradient(45deg,#6a5acd,#6a5acd 6px,#7a6bd9 6px,#7a6bd9 12px);color:#fff;font-size:9px;font-weight:bold;box-shadow:0 2px 6px #0003;touch-action:none}#modal-overlay{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:999;padding:20px}#modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:360px;max-height:80vh;overflow:auto}#modal-box h3{text-align:center}.modal-option,.modal-close{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:8px;cursor:pointer}.modal-option{background:#f7f2ea;border:1px solid #ddd;text-align:right}.modal-close{background:#eee;border:0}
+*{box-sizing:border-box}body{font-family:Tahoma,sans-serif;background:#f2ece1;margin:0;padding:20px;min-height:100vh}#app{max-width:1200px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}header h1{font-size:20px;margin:0;flex:1;text-align:center;color:#333}.icon-btn{background:#b08d57;color:#fff;border:0;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}#lock-btn.unlocked{background:#4a8c4a}#chart-btn{background:#6a5acd}input{padding:12px;width:100%;font-size:16px;margin-bottom:14px;text-align:right;border:1px solid #ccc;border-radius:8px;font-family:inherit}.tables-container{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}@media(max-width:650px){.tables-container{grid-template-columns:1fr}}.card,.admin-panel{background:#fff;border-radius:12px;box-shadow:0 2px 5px #0002;padding:15px;text-align:right}.card h3{margin:0 0 10px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}.table-actions{display:flex;gap:6px}.del-table,.edit-table{cursor:pointer;font-size:13px;border-radius:6px;padding:2px 8px;background:#fff}.del-table{color:#c0392b;border:1px solid #c0392b}.edit-table{color:#6a5acd;border:1px solid #6a5acd}.count-field{font-size:13px;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}.count-field input{width:60px;padding:4px 6px;margin:0;font-size:13px;text-align:center}.count-field-readonly{font-size:13px;color:#777;margin-bottom:8px}.card ul{list-style:none;padding:0;margin:0}.card li{font-size:15px;margin-bottom:4px;display:flex;justify-content:space-between}.del-guest{color:#c0392b;cursor:pointer;font-weight:bold;padding:0 6px}.highlight{background:#fffa9c;font-weight:bold;padding:2px 5px;border-radius:4px}.no-results{text-align:center;grid-column:1/-1}.add-guest-row{display:flex;gap:6px;margin-top:8px}.add-guest-row input{margin:0}.add-guest-row button,.admin-panel button{background:#4a8c4a;color:#fff;border:0;border-radius:8px;padding:0 14px;cursor:pointer}.admin-panel{margin-bottom:20px}.admin-panel .row{display:flex;gap:10px}.admin-panel .row input:first-child{max-width:120px}#save-status{font-size:12px;color:#4a8c4a}.backup-panel{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:nowrap;margin:0 0 10px;white-space:nowrap}.backup-btn{border:0;border-radius:10px;padding:7px 9px;cursor:pointer;font-family:inherit;font-size:11px;white-space:nowrap}.backup-download{background:#b08d57;color:#fff}.backup-import{background:#6a5acd;color:#fff}.backup-input{display:none}#seating-view{display:none}#seating-toolbar{display:flex;justify-content:center;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:nowrap;white-space:nowrap}#add-table-map-btn,#add-aisle-btn{background:#4a8c4a;color:#fff;border:0;border-radius:18px;padding:8px 11px;cursor:pointer;font-size:12px;white-space:nowrap}#add-aisle-btn{background:#6a5acd}#add-aisle-btn:disabled{background:#ccc}#floor-plan-wrapper{background:#fff;border-radius:16px;box-shadow:0 2px 8px #0002;overflow:visible;margin-bottom:16px}#floor-plan{position:relative;width:100%;height:760px;background:#fff;touch-action:pinch-zoom}#floor-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.floor-label{position:absolute;color:#b08d57;font-size:13px;text-align:center;z-index:1;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}.total-count-label{text-align:center;color:#555;font-size:14px;font-weight:bold;margin:0 0 12px}.dev-credit{text-align:center;color:#bbb;font-size:10px;line-height:1.05;margin:1px 0 3px}.table-box,.slot-box,.aisle-box{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;user-select:none;z-index:2}.table-box{border-radius:8px;background:#b08d57;color:#fff;box-shadow:0 2px 6px #0003;touch-action:none}.table-box .box-name,.slot-box .box-name{font-size:8px;font-weight:bold}.table-box .box-count,.slot-box .box-count{font-size:6px}.editable{cursor:grab}.dragging{cursor:grabbing;opacity:.85;z-index:10}.box-ctrl{position:absolute;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:11}.box-rotate{background:#6a5acd}.box-delete{background:#c0392b}.slot-box{border-radius:6px}.slot-box.filled{background:#8a6d3b;color:#fff;box-shadow:0 2px 6px #0003}.slot-box.empty{background:#f7f2ea;border:2px dashed #b08d57;color:#b08d57;font-size:10px}.slot-box.clickable,.slot-box.filled.clickable{cursor:pointer}.aisle-box{border-radius:4px;background:repeating-linear-gradient(45deg,#6a5acd,#6a5acd 6px,#7a6bd9 6px,#7a6bd9 12px);color:#fff;font-size:9px;font-weight:bold;box-shadow:0 2px 6px #0003;touch-action:none}#modal-overlay{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:999;padding:20px}#modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:360px;max-height:80vh;overflow:auto}#modal-box h3{text-align:center}.modal-option,.modal-close{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:8px;cursor:pointer}.modal-option{background:#f7f2ea;border:1px solid #ddd;text-align:right}.modal-close{background:#eee;border:0}
 </style>
 </head>
 <body>
@@ -52,72 +52,49 @@ function loadSeatingCache(){
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
   try{
-    let saved;
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      const d=snap.exists?snap.data():{};
-      const remote=d.placements&&typeof d.placements==="object"?d.placements:{};
-      const next={...remote};
-      const old=next[key]&&typeof next[key]==="object"?next[key]:{};
-      next[key]={...old,...patch};
-      saved=next;
-      tx.set(seatingRef,{placements:next},{merge:true});
-    });
-    placements=saved||placements;
+    // حفظ مباشر على مستوى الحقل، بدون استبدال خريطة placements كاملة.
+    // هذا يسمح بإضافة/تحريك/تدوير/حذف أي طاولة أو ممر بشكل مستقل.
+    const field=new firebase.firestore.FieldPath("placements",String(key));
+    await seatingRef.set({placements:{[String(key)]:patch}},{merge:true});
+    placements[String(key)]={...(placements[String(key)]||{}),...patch};
     cacheSeating();
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    statusEl.textContent="⚠ فشل حفظ الخريطة";
-    setTimeout(()=>statusEl.textContent="",2500);
+    // لا نعرض رسالة فشل مزعجة للمستخدم؛ نبقي البيانات المحلية حتى تعود الشبكة.
+    cacheSeating();
     return false;
   }
 }
 
 async function deletePlacement(key){
   try{
-    let saved;
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      const d=snap.exists?snap.data():{};
-      const remote=d.placements&&typeof d.placements==="object"?d.placements:{};
-      const next={...remote};
-      delete next[key];
-      saved=next;
-      tx.set(seatingRef,{placements:next},{merge:true});
-    });
-    placements=saved||{};
+    await seatingRef.update(new firebase.firestore.FieldPath("placements",String(key)),FieldValue.delete());
+    delete placements[String(key)];
     cacheSeating();
     return true;
   }catch(e){
     console.error("deletePlacement failed",e);
-    statusEl.textContent="⚠ فشل حفظ الخريطة";
-    setTimeout(()=>statusEl.textContent="",2500);
+    cacheSeating();
     return false;
   }
 }
 
 async function saveCircleSlot(i,value,remove=false){
   try{
-    let saved;
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      const d=snap.exists?snap.data():{};
-      const remote=d.circleSlots&&typeof d.circleSlots==="object"?d.circleSlots:{};
-      const next={...remote};
-      const key=String(i);
-      if(remove) delete next[key];
-      else next[key]=value;
-      saved=next;
-      tx.set(seatingRef,{circleSlots:next},{merge:true});
-    });
-    circleSlots=saved||circleSlots;
+    const field=new firebase.firestore.FieldPath("circleSlots",String(i));
+    if(remove){
+      await seatingRef.update(field,FieldValue.delete());
+      delete circleSlots[String(i)];
+    }else{
+      await seatingRef.set({circleSlots:{[String(i)]:value}},{merge:true});
+      circleSlots[String(i)]=value;
+    }
     cacheSeating();
     return true;
   }catch(e){
     console.error("saveCircleSlot failed",e);
-    statusEl.textContent="⚠ فشل حفظ الخريطة";
-    setTimeout(()=>statusEl.textContent="",2500);
+    cacheSeating();
     return false;
   }
 }
@@ -132,7 +109,7 @@ addEventListener("resize",()=>{if(currentView==="seating"){drawFloorPlan();rende
 function normalizeTables(data){const out={};Object.keys(data).forEach(k=>{const v=data[k];out[k]=Array.isArray(v)?{count:null,tablesCount:null,names:v}:v&&typeof v==="object"?{count:typeof v.count==="number"?v.count:null,tablesCount:typeof v.tablesCount==="number"?v.tablesCount:null,names:Array.isArray(v.names)?v.names:[]}:{count:null,tablesCount:null,names:[]}});return out}
 
 function startListening(){
-  statusEl.textContent="جارِ الاتصال...";
+  statusEl.textContent="";
   tablesRef.onSnapshot(s=>{
     if(s.exists){
       const raw=s.data().tables;
@@ -174,12 +151,11 @@ function startListening(){
 async function saveData(){
   if(!Object.keys(currentData).length){
     console.warn("Blocked empty save to protect Firestore data.");
-    statusEl.textContent="⚠ تم منع حفظ بيانات فارغة حمايةً للبيانات";
-    setTimeout(()=>statusEl.textContent="",2500);
+
     return false;
   }
   try{
-    statusEl.textContent="جارِ الحفظ...";
+
     await db.runTransaction(async tx=>{
       const snap=await tx.get(tablesRef);
       const remote=snap.exists&&snap.data().tables&&typeof snap.data().tables==="object"?snap.data().tables:{};
@@ -189,13 +165,11 @@ async function saveData(){
       // ندمج الجداول الحالية بدلاً من استبدال tables بالكامل.
       tx.set(tablesRef,{tables:currentData},{merge:true});
     });
-    statusEl.textContent="✔ تم الحفظ";
-    setTimeout(()=>statusEl.textContent="",1500);
+
     return true;
   }catch(e){
     console.error(e);
-    statusEl.textContent=e.message==="EMPTY_SAVE_BLOCKED"?"⚠ تم منع حذف البيانات":"⚠ فشل الحفظ";
-    setTimeout(()=>statusEl.textContent="",2500);
+
     return false;
   }
 }
