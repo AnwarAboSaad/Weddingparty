@@ -11,7 +11,7 @@
 <body>
 <div id="app"><header><button id="lock-btn" class="icon-btn" onclick="toggleLock()">🔒</button><h1>👰🤵 Abdo & Sulaf</h1><button id="chart-btn" class="icon-btn" onclick="toggleView()">🪑</button></header><div style="text-align:center;margin-bottom:10px"><span id="save-status"></span></div>
 <div id="search-view"><input id="search" placeholder="اكتب الاسم هنا..."><div class="backup-panel"><button class="backup-btn backup-download" onclick="downloadBackup()">⬇️ تنزيل نسخة احتياطية</button><button class="backup-btn backup-import" onclick="document.getElementById('backup-file').click()">⬆️ استيراد نسخة احتياطية</button><input id="backup-file" class="backup-input" type="file" accept="application/json,.json" onchange="importBackup(event)"></div><p id="total-count" class="total-count-label"></p><p id="total-tables-count" class="total-count-label"></p><div id="admin-panel" class="admin-panel" style="display:none"><h3>➕ إضافة طاولة جديدة</h3><div class="row"><input id="new-table-num" placeholder="رقم/اسم الطاولة"><input id="new-table-names" placeholder="الأسماء (أفصل بنقطة)"><button onclick="addTable()">إضافة</button></div></div><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="results" class="tables-container"></div></div>
-<div id="seating-view"><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
+<div id="seating-view"><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button><button id="add-aisle-btn" onclick="addAisleToMap()">+ إضافة ممر العروسين</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
 <div id="modal-overlay"><div id="modal-box"></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
@@ -20,8 +20,7 @@ const firebaseConfig={apiKey:"AIzaSyDRGodtyKvHhIyO33AeSHOFcTTzkEKEXWE",authDomai
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore(),tablesRef=db.collection("app").doc("guest-tables"),seatingRef=db.collection("app").doc("seating-layout");
 const FieldValue=firebase.firestore.FieldValue;
 const defaultTables={};
-let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const pendingPlacementWrites={};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
-const DEFAULT_AISLE={x:50,y:15,rot:0};
+let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
 const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box");
 
 // === حفظ آمن للخريطة ===
@@ -46,88 +45,67 @@ function loadSeatingCache(){
       if(c.placements&&typeof c.placements==="object")placements=c.placements;
       if(c.circleSlots&&typeof c.circleSlots==="object")circleSlots=c.circleSlots;
     }
-    if(!placements[AISLE_KEY])placements[AISLE_KEY]={...DEFAULT_AISLE};
   }catch(e){console.warn("local seating cache invalid",e)}
 }
 
 // يحفظ التعديل بعد قراءة آخر نسخة من Firebase داخل Transaction.
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
-  const k=String(key);
-  const previous={...(placements[k]||{})};
-  placements[k]={...previous,...patch};
-  cacheSeating();
-  pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
   try{
-    // لا نستخدم Transaction هنا: تحريك العناصر على الهاتف يجب أن يُحفظ
-    // حتى لو كان Firestore غير متاح لحظياً. set(..., {merge:true}) يسمح
-    // أيضاً بإنشاء وثيقة seating-layout إذا لم تكن موجودة، مع الحفاظ على
-    // جميع عناصر placements الأخرى.
-    await seatingRef.set({
-      placements:{[k]:placements[k]}
-    },{mergeFields:[new firebase.firestore.FieldPath("placements",k)]});
-
-    delete pendingPlacementWrites[k];
+    const k=String(key);
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      const remote=snap.exists&&snap.data().mapPlacements&&typeof snap.data().mapPlacements==="object"
+        ?snap.data().mapPlacements:{};
+      const merged={...remote,[k]:{...(remote[k]||{}),...patch}};
+      // نحفظ الخريطة داخل نفس مستند البيانات الذي يعمل عليه التطبيق أصلاً.
+      // هذا يتجنب مشكلة صلاحيات مستند seating-layout ويضمن بقاء الخريطة بعد التحديث.
+      tx.set(tablesRef,{mapPlacements:merged},{merge:true});
+    });
+    placements[k]={...(placements[k]||{}),...patch};
     cacheSeating();
-    statusEl.textContent="✓ تم حفظ التعديل على Firebase";
-    setTimeout(()=>{if(statusEl.textContent==="✓ تم حفظ التعديل على Firebase")statusEl.textContent=""},1500);
+    statusEl.textContent="✓ تم حفظ تعديل الخريطة";
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    // لا نرجع العنصر للمكان القديم. يبقى محلياً حتى تنجح المزامنة لاحقاً.
-    pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
     cacheSeating();
     statusEl.textContent="⚠ تعذر الحفظ على Firebase — التعديل محفوظ محلياً";
     return false;
   }
 }
-async function syncPendingPlacements(){
-  const keys=Object.keys(pendingPlacementWrites);
-  for(const k of keys){
-    const p=placements[k];
-    if(!p)continue;
-    try{
-      await seatingRef.set({placements:{[k]:p}},{mergeFields:[new firebase.firestore.FieldPath("placements",k)]});
-      delete pendingPlacementWrites[k];
-    }catch(e){
-      console.warn("pending placement sync failed",k,e);
-    }
-  }
-  cacheSeating();
-}
 
 async function deletePlacement(key){
-  const k=String(key);
   try{
-    // حذف العنصر المحدد فقط باستخدام FieldPath، بدون إعادة كتابة باقي الخريطة.
-    await seatingRef.update(new firebase.firestore.FieldPath("placements",k),FieldValue.delete());
-    delete placements[k];
-    delete pendingPlacementWrites[k];
+    await tablesRef.update(new firebase.firestore.FieldPath("mapPlacements",String(key)),FieldValue.delete());
+    delete placements[String(key)];
     cacheSeating();
-    statusEl.textContent="✓ تم الحذف والحفظ";
+    statusEl.textContent="✓ تم حفظ حذف العنصر من الخريطة";
     return true;
   }catch(e){
     console.error("deletePlacement failed",e);
-    statusEl.textContent="⚠ تعذر حفظ الحذف على Firebase";
     cacheSeating();
+    statusEl.textContent="⚠ تعذر حفظ حذف العنصر";
     return false;
   }
 }
+
 async function saveCircleSlot(i,value,remove=false){
   try{
-    const field=new firebase.firestore.FieldPath("circleSlots",String(i));
+    const field=new firebase.firestore.FieldPath("mapCircleSlots",String(i));
     if(remove){
-      await seatingRef.update(field,FieldValue.delete());
+      await tablesRef.update(field,FieldValue.delete());
       delete circleSlots[String(i)];
     }else{
-      await seatingRef.set({circleSlots:{[String(i)]:value}},{merge:true});
+      await tablesRef.set({mapCircleSlots:{[String(i)]:value}},{merge:true});
       circleSlots[String(i)]=value;
     }
     cacheSeating();
+    statusEl.textContent="✓ تم حفظ تعديل توزيع الطاولات";
     return true;
   }catch(e){
     console.error("saveCircleSlot failed",e);
     cacheSeating();
+    statusEl.textContent="⚠ تعذر حفظ تعديل التوزيع";
     return false;
   }
 }
@@ -135,7 +113,7 @@ async function saveCircleSlot(i,value,remove=false){
 function toggleLock(){if(isUnlocked){isUnlocked=false;updateLockUI();renderCurrentView();return}const v=prompt("أدخل كلمة السر للفتح:");if(v===null)return;if(v===ADMIN_PASSWORD){isUnlocked=true;updateLockUI();renderCurrentView()}else alert("كلمة السر غير صحيحة")}
 function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none"}
 function toggleView(){currentView=currentView==="search"?"seating":"search";searchView.style.display=currentView==="search"?"block":"none";seatingView.style.display=currentView==="seating"?"block":"none";chartBtn.textContent=currentView==="search"?"🪑":"🔎";updateLockUI();renderCurrentView()}
-function renderCurrentView(){if(currentView==="seating"&&!placements[AISLE_KEY])placements[AISLE_KEY]={...DEFAULT_AISLE};currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
+function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
 function drawFloorPlan(){const w=floorPlan.clientWidth,h=floorPlan.clientHeight;if(!w||!h)return;floorSvg.setAttribute("viewBox",`0 0 ${w} ${h}`);const cy=h/2,r=Math.min(w,h)*.22,cx=4;danceGeo={cx,cy,r};floorSvg.innerHTML=`<path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none"/>`;danceLabel.style.left=cx+r*.5+"px";danceLabel.style.top=cy+"px"}
 addEventListener("resize",()=>{if(currentView==="seating"){drawFloorPlan();renderCircleSlots();renderPlacements()}});
 
@@ -163,27 +141,30 @@ function startListening(){
   // نقرأ الخريطة بدون اعتبار غياب الحقل = خريطة فارغة.
   // هذا يمنع Snapshot قديم/ناقص من إعادة الطاولات أو الممرات المحذوفة/المضافة.
   loadSeatingCache();
-  seatingRef.onSnapshot(s=>{
+  // الخريطة محفوظة الآن داخل guest-tables تحت mapPlacements و mapCircleSlots.
+  // إذا كانت هناك خريطة قديمة في seating-layout أو في ذاكرة الهاتف، لا نمسحها.
+  tablesRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
-    if(Object.prototype.hasOwnProperty.call(d,"placements") && d.placements && typeof d.placements==="object"){
-      const remote=d.placements;
-      // لا تسمح لـ snapshot قديم أن يعيد عنصراً تم تحريكه للتو إلى مكانه السابق.
-      const merged={...remote};
-      Object.keys(pendingPlacementWrites).forEach(k=>{
-        merged[k]={...(merged[k]||{}),...pendingPlacementWrites[k]};
-      });
-      placements=merged;
+    if(Object.prototype.hasOwnProperty.call(d,"mapPlacements") && d.mapPlacements && typeof d.mapPlacements==="object"){
+      placements=d.mapPlacements;
     }
-    if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
-      circleSlots=d.circleSlots;
+    if(Object.prototype.hasOwnProperty.call(d,"mapCircleSlots") && d.mapCircleSlots && typeof d.mapCircleSlots==="object"){
+      circleSlots=d.mapCircleSlots;
     }
-    if(!placements[AISLE_KEY])placements[AISLE_KEY]={...DEFAULT_AISLE};
     cacheSeating();
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
-  },(e)=>{
-    console.error(e);
-    // عند انقطاع الاتصال لا نمسح الخريطة من الشاشة.
-  });
+  },e=>console.error("map snapshot failed",e));
+
+  // قراءة الخريطة القديمة فقط كترحيل احتياطي؛ لا نكتب فوقها ولا نعتمد عليها للحفظ.
+  seatingRef.onSnapshot(s=>{
+    const d=s.exists?s.data():{};
+    if(!Object.prototype.hasOwnProperty.call(d,"placements") && !Object.prototype.hasOwnProperty.call(d,"circleSlots"))return;
+    // لا نستبدل خريطة جديدة محفوظة داخل guest-tables بخريطة قديمة.
+    if(!Object.keys(placements).length && d.placements && typeof d.placements==="object") placements=d.placements;
+    if(!Object.keys(circleSlots).length && d.circleSlots && typeof d.circleSlots==="object") circleSlots=d.circleSlots;
+    cacheSeating();
+    if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
+  },e=>console.warn("legacy seating-layout unavailable",e));
 }
 
 // حفظ آمن: لا يستبدل خريطة tables كاملة، ولا يسمح بكتابة {} فوق بيانات موجودة.
@@ -276,7 +257,7 @@ async function importBackup(event){
       const merged={...remote,...restoredTables};
       tx.set(tablesRef,{tables:merged},{merge:true});
     });
-    await seatingRef.set({placements:restoredPlacements,circleSlots:restoredCircleSlots},{merge:true});
+    await tablesRef.set({mapPlacements:restoredPlacements,mapCircleSlots:restoredCircleSlots},{merge:true});
     currentData=restoredTables;
     placements={...placements,...restoredPlacements};
     circleSlots={...circleSlots,...restoredCircleSlots};
@@ -356,16 +337,15 @@ function renderPlacements(){
         b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
         el.appendChild(b);
       });
-      if(!aisle){
-        const d=document.createElement("div");
-        d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
-        d.onpointerdown=e=>e.stopPropagation();
-        d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
-        el.appendChild(d);
-      }
+      const d=document.createElement("div");
+      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
+      d.onpointerdown=e=>e.stopPropagation();
+      d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
+      el.appendChild(d);
     }
     floorPlan.appendChild(el);
   });
+  updateAisleButtonState();
 }
 
 function onBoxPointerDown(e){
@@ -493,6 +473,5 @@ async function addAisleToMap(){
 
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
 modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});
-window.addEventListener("online",()=>{syncPendingPlacements();});
 startListening();
 </script></body></html>
