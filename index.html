@@ -3,86 +3,315 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>استعادة البيانات</title>
+<title>البحث عن المعازيم</title>
 <style>
-body{font-family:Tahoma,sans-serif;background:#f2ece1;padding:30px 20px;text-align:center}
-h2{color:#333}
-p{color:#555;line-height:1.6}
-button{background:#4a8c4a;color:#fff;border:none;border-radius:10px;padding:16px 30px;font-size:17px;cursor:pointer;margin-top:20px}
-button:disabled{background:#ccc}
-#status{margin-top:20px;font-size:15px;font-weight:bold}
-.warn{color:#c0392b;font-size:13px;margin-top:30px}
+*{box-sizing:border-box}body{font-family:Tahoma,sans-serif;background:#f2ece1;margin:0;padding:20px;min-height:100vh}#app{max-width:1200px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}header h1{font-size:20px;margin:0;flex:1;text-align:center;color:#333}.icon-btn{background:#b08d57;color:#fff;border:0;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}#lock-btn.unlocked{background:#4a8c4a}#chart-btn{background:#6a5acd}input{padding:12px;width:100%;font-size:16px;margin-bottom:14px;text-align:right;border:1px solid #ccc;border-radius:8px;font-family:inherit}.tables-container{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}@media(max-width:650px){.tables-container{grid-template-columns:1fr}}.card,.admin-panel{background:#fff;border-radius:12px;box-shadow:0 2px 5px #0002;padding:15px;text-align:right}.card h3{margin:0 0 10px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}.table-actions{display:flex;gap:6px}.del-table,.edit-table{cursor:pointer;font-size:13px;border-radius:6px;padding:2px 8px;background:#fff}.del-table{color:#c0392b;border:1px solid #c0392b}.edit-table{color:#6a5acd;border:1px solid #6a5acd}.count-field{font-size:13px;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}.count-field input{width:60px;padding:4px 6px;margin:0;font-size:13px;text-align:center}.count-field-readonly{font-size:13px;color:#777;margin-bottom:8px}.card ul{list-style:none;padding:0;margin:0}.card li{font-size:15px;margin-bottom:4px;display:flex;justify-content:space-between}.del-guest{color:#c0392b;cursor:pointer;font-weight:bold;padding:0 6px}.highlight{background:#fffa9c;font-weight:bold;padding:2px 5px;border-radius:4px}.no-results{text-align:center;grid-column:1/-1}.add-guest-row{display:flex;gap:6px;margin-top:8px}.add-guest-row input{margin:0}.add-guest-row button,.admin-panel button{background:#4a8c4a;color:#fff;border:0;border-radius:8px;padding:0 14px;cursor:pointer}.admin-panel{margin-bottom:20px}.admin-panel .row{display:flex;gap:10px}.admin-panel .row input:first-child{max-width:120px}#save-status{font-size:12px;color:#4a8c4a}#backup-bar{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}#export-btn,#import-btn{background:#6a5acd;color:#fff;border:0;border-radius:16px;padding:8px 14px;font-size:13px;cursor:pointer}#import-btn{background:#b08d57}#seating-view{display:none}#seating-toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}#add-table-map-btn,#add-aisle-btn{background:#4a8c4a;color:#fff;border:0;border-radius:20px;padding:10px 16px;cursor:pointer}#add-aisle-btn{background:#6a5acd}#add-aisle-btn:disabled{background:#ccc}#floor-plan-wrapper{background:#fff;border-radius:16px;box-shadow:0 2px 8px #0002;overflow:visible;margin-bottom:16px}#floor-plan{position:relative;width:100%;height:760px;background:#fff;touch-action:pinch-zoom}#floor-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.floor-label{position:absolute;color:#b08d57;font-size:13px;text-align:center;z-index:1;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}.total-count-label{text-align:center;color:#555;font-size:14px;font-weight:bold;margin:0 0 12px}.dev-credit{text-align:center;color:#bbb;font-size:11px;margin:4px 0 12px}.table-box,.slot-box,.aisle-box{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;user-select:none;z-index:2}.table-box{border-radius:8px;background:#b08d57;color:#fff;box-shadow:0 2px 6px #0003;touch-action:none}.table-box .box-name,.slot-box .box-name{font-size:8px;font-weight:bold}.table-box .box-count,.slot-box .box-count{font-size:6px}.editable{cursor:grab}.dragging{cursor:grabbing;opacity:.85;z-index:10}.box-ctrl{position:absolute;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:11}.box-rotate{background:#6a5acd}.box-delete{background:#c0392b}.slot-box{border-radius:6px}.slot-box.filled{background:#8a6d3b;color:#fff;box-shadow:0 2px 6px #0003}.slot-box.empty{background:#f7f2ea;border:2px dashed #b08d57;color:#b08d57;font-size:10px}.slot-box.clickable,.slot-box.filled.clickable{cursor:pointer}.aisle-box{border-radius:4px;background:repeating-linear-gradient(45deg,#6a5acd,#6a5acd 6px,#7a6bd9 6px,#7a6bd9 12px);color:#fff;font-size:9px;font-weight:bold;box-shadow:0 2px 6px #0003;touch-action:none}#modal-overlay{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:999;padding:20px}#modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:360px;max-height:80vh;overflow:auto}#modal-box h3{text-align:center}.modal-option,.modal-close{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:8px;cursor:pointer}.modal-option{background:#f7f2ea;border:1px solid #ddd;text-align:right}.modal-close{background:#eee;border:0}
 </style>
 </head>
 <body>
-<h2>🔄 استعادة البيانات الأساسية</h2>
-<p>هالصفحة رح تكتب نسخة أساسية من الطاولات (19 طاولة) عالقاعدة، مع تعديل طاولتي<br>"اصدقاء ام العروس" و"ال فرحة" حسب آخر صورة كانت عندي.</p>
-<p><b>ملاحظة:</b> أي تعديلات تانية عملتها بعد هيك (أسماء طاولات، أعداد، معازيم إضافية) مش موجودة هون وبتحتاج تعيد كتابتها يدوياً بعد الاستعادة.</p>
-<button id="btn" onclick="doRestore()">استعادة البيانات الآن</button>
-<div id="status"></div>
-<p class="warn">⚠ هاي الصفحة لاستخدام لمرة وحدة بس. بعد ما تستعيد البيانات، احذفها وما تفتحها تاني.</p>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<div id="app"><header><button id="lock-btn" class="icon-btn" onclick="toggleLock()">🔒</button><h1>👰🤵 Abdo & Sulaf</h1><button id="chart-btn" class="icon-btn" onclick="toggleView()">🪑</button></header><div style="text-align:center;margin-bottom:6px"><span id="save-status"></span></div>
+<div id="backup-bar" style="display:none;text-align:center;margin-bottom:14px"><button id="export-btn" onclick="exportBackup()">⬇️ نسخة احتياطية</button><button id="import-btn" onclick="document.getElementById('import-file').click()">⬆️ استعادة من ملف</button><input type="file" id="import-file" accept="application/json" style="display:none" onchange="importBackup(event)"></div>
+<div id="search-view"><input id="search" placeholder="اكتب الاسم هنا..."><p id="total-count" class="total-count-label"></p><p id="total-tables-count" class="total-count-label"></p><div id="admin-panel" class="admin-panel" style="display:none"><h3>➕ إضافة طاولة جديدة</h3><div class="row"><input id="new-table-num" placeholder="رقم/اسم الطاولة"><input id="new-table-names" placeholder="الأسماء (أفصل بنقطة)"><button onclick="addTable()">إضافة</button></div></div><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="results" class="tables-container"></div></div>
+<div id="seating-view"><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button><button id="add-aisle-btn" onclick="addAisleToMap()">+ إضافة ممر العروسين</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
+<div id="modal-overlay"><div id="modal-box"></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+const ADMIN_PASSWORD="2412";
 const firebaseConfig={apiKey:"AIzaSyDRGodtyKvHhIyO33AeSHOFcTTzkEKEXWE",authDomain:"wedding-5ee28.firebaseapp.com",projectId:"wedding-5ee28",storageBucket:"wedding-5ee28.firebasestorage.app",messagingSenderId:"446620021297",appId:"1:446620021297:web:f1c6efca483f0a09f01b10"};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-const tablesRef=db.collection("app").doc("guest-tables");
+firebase.initializeApp(firebaseConfig);const db=firebase.firestore(),tablesRef=db.collection("app").doc("guest-tables"),seatingRef=db.collection("app").doc("seating-layout");
+const FieldValue=firebase.firestore.FieldValue;
+let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,ROTATE_STEP=5;
+const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box"),backupBar=$("backup-bar");
 
-const rawTables={
-"طاولة اصدقاء ام العروس":["عايد نجيب","ريمون وردة","عامر حداد","غيان الصافي","لينا سلوم","غزوة فروح","نتاشا شدود"],
-"طاولة ال فرحة":["حسان الصايغ","باسم فرحة","علاء فرحة","قائد العبدالله","عارف نصار","ميشيل نصار","نصار نصار","جمال فرحة","الياس فروح","محجوب درة","د. عايد نصار"],
-3:["جدلان دويب","باسل دويب","امجد دويب","رئيف فروح","فراس دويب","سامي دويب","حنا دويب","حسان دويب","ابراهيم جميل دويب","طوني دويب","سومر اكرم دويب","بيير دويب"],
-4:["عيسى العجي","بشار منصور","رمزي اسعيفان","فيرلي اسعيفان","نهلة دويب","جورج الزودة","فادي منصور","بطرس ضاهر","مروة نجيب"],
-5:["سمير دويب","بشار دويب","طلال دويب","عماد دويب","حازم نصور","منهل ابو حامضة","جميل فتيح","مروان فرحة","بطرس فروح","فريال ابو سعد"],
-6:["امين دويب","جورجيت اسكيف","يوسف حطاب","رئيف اسعد","مالك مريعبي","صباح عبدلكي","اديب اسعيفان","الياس اسعد","عارف سعادة","ميشيل درة"],
-7:["اليان دويب","طوني ليوس","ميلاد ابراهيم","مازن فروح","مجد سنكري","حسان حداد","ثائر اسكاف"],
-8:["الياس دويب","بطرس دويب","ماريو عدبة","جرجس شاهين","هاني العدالله","حسام دعبول","صلاح العجوز","مأمون سنكري"],
-9:["حبيب دويب","مالك شحادة","ايميل الاسعد","حسام جبور","منصور عبد المسيح","جوني الصايغ","ريان اسكاف","صفوان عراضي","سامر شهدا","امير فرحة","نوفل يعقوب","باسل يعقوب","هاني النادر"],
-10:["مازن غنوم","انور ابو سعد","عبدو غنوم","قوندراق","عصام وسوف","رعد ابنيات","فهد ضاهر","الياس سلوم","جوني غنوم","هاني نعمة","ورد نجيب","ميري بشلاوي","مجد نصار","حنا السعد","اليان فروح","جاكو الرادشي","ايهم شهدا"],
-11:["جورج محفوض","فهد ملحم","فهد نعمة","ليث سلوم","ناجي ليوس","بيير وردة","اديب سلوم","بولص بولص","ابراهيم الجرجس","ايهم الجرجس","الياس شاهين","فضل قوندراق","فضل صوان"],
-12:["رأفت بشور","سامر حنا","منذر العبدالله","حنا ساكو","فادي ديوب","عيسى فرحة","فهد الناصر","ابراهيم حنا","وائل فرحة","انور سنكري"],
-13:["غزوة فروح","رولان فروح","روجيه كاترين","اثينا البطرس","نايا البطرس","مجد ملحم","جورج عراضي"],
-14:["حكيم سلوم","بديع سلوم","حازم الوكيل","سامي سلوم","كنعان سلوم","جورج سلوم","حليم سلوم","الياس سلوم"],
-15:["اديب داوود","صادر السعد","حسان نعمة","اديب ريشه","فريز البارودي","اياد سنكري","ريمون اسكاف","حسان الديب","سميح موسى","رامي مويس","جرجس عراضي","واصل الخابوري"],
-16:["فايز ابو سعد","انور بنيات","عصام ديوب","رائد سعيفان","امجد النادر","طوني بولص"],
-17:["مرهف توما","ريمون توما","سيمون توما","ماهر توما","غزوان الصايغ","سهيل بنود","شادي ابو زيد","فادي ابو زيد"],
-18:["سيمون دويب","ريمون دويب","مخاييل دويب","عهد العريض","سومر دويب","رامي دويب"],
-19:["جبر حنا","جول يعقوب","سامر يعقوب","صبري فروح","فهد فرحة"],
-20:["ميشو الديب","فاخر درة","مجد عيسى","باسل الاشقر"],
-21:["ليث ابو صفرة","عبد دعبول","مجد مخول","الياس سعيفان"]
-};
-
-async function doRestore(){
-  const btn=document.getElementById("btn");
-  const status=document.getElementById("status");
-  btn.disabled=true;
-  status.textContent="جارِ التحقق...";
-  try{
-    const snap=await tablesRef.get();
-    if(snap.exists && snap.data().tables && Object.keys(snap.data().tables).length>0){
-      if(!confirm("⚠ في بيانات موجودة حالياً بالقاعدة! متأكد إنك بدك تستبدلها بالنسخة الأساسية؟")){
-        btn.disabled=false;
-        status.textContent="";
-        return;
-      }
-    }
-    const tables={};
-    Object.keys(rawTables).forEach(k=>{
-      tables[k]={count:null,tablesCount:null,names:rawTables[k]};
-    });
-    status.textContent="جارِ الكتابة...";
-    await tablesRef.set({tables});
-    status.textContent="✔ تمت الاستعادة بنجاح! افتح التطبيق الأساسي وتأكد.";
-    status.style.color="#4a8c4a";
-  }catch(e){
+// === حفظ جزئي: يحدّث الحقل المطلوب بس داخل وثيقة الخريطة، بدون ما يلمس باقي الحقول ===
+// هيك لو جهازين فتحوا الصفحة بنفس الوقت، تعديل كل واحد فيهن بيضل محفوظ ومابيمسح تعديل التاني
+async function saveSeatingField(fieldPath, value) {
+  try {
+    await seatingRef.set({ [fieldPath]: value }, { merge: true });
+  } catch (e) {
     console.error(e);
-    status.textContent="⚠ صار خطأ: "+e.message;
-    status.style.color="#c0392b";
-    btn.disabled=false;
+    statusEl.textContent = "⚠ فشل الحفظ";
+    setTimeout(() => (statusEl.textContent = ""), 2000);
   }
 }
-</script>
-</body>
-</html>
+
+function toggleLock(){if(isUnlocked){isUnlocked=false;updateLockUI();renderCurrentView();return}const v=prompt("أدخل كلمة السر للفتح:");if(v===null)return;if(v===ADMIN_PASSWORD){isUnlocked=true;updateLockUI();renderCurrentView()}else alert("كلمة السر غير صحيحة")}
+function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none";backupBar.style.display=isUnlocked?"flex":"none"}
+function toggleView(){currentView=currentView==="search"?"seating":"search";searchView.style.display=currentView==="search"?"block":"none";seatingView.style.display=currentView==="seating"?"block":"none";chartBtn.textContent=currentView==="search"?"🪑":"🔎";updateLockUI();renderCurrentView()}
+function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
+function drawFloorPlan(){const w=floorPlan.clientWidth,h=floorPlan.clientHeight;if(!w||!h)return;floorSvg.setAttribute("viewBox",`0 0 ${w} ${h}`);const cy=h/2,r=Math.min(w,h)*.22,cx=4;danceGeo={cx,cy,r};floorSvg.innerHTML=`<path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none"/>`;danceLabel.style.left=cx+r*.5+"px";danceLabel.style.top=cy+"px"}
+addEventListener("resize",()=>{if(currentView==="seating"){drawFloorPlan();renderCircleSlots();renderPlacements()}});
+
+function normalizeTables(data){const out={};Object.keys(data).forEach(k=>{const v=data[k];out[k]=Array.isArray(v)?{count:null,tablesCount:null,names:v}:v&&typeof v==="object"?{count:typeof v.count==="number"?v.count:null,tablesCount:typeof v.tablesCount==="number"?v.tablesCount:null,names:Array.isArray(v.names)?v.names:[]}:{count:null,tablesCount:null,names:[]}});return out}
+
+function startListening(){
+  statusEl.textContent="جارِ الاتصال...";
+  tablesRef.onSnapshot(async s=>{
+    if(s.exists&&s.data().tables&&Object.keys(s.data().tables).length>0){
+      currentData=normalizeTables(s.data().tables);
+      statusEl.textContent="";
+    }else{
+      // القاعدة طالعة فاضية أو مش موصولة - ما منكتب فوقها أبداً، بس منبيّن تحذير ومنستنى
+      statusEl.textContent="⚠ ما وصلت البيانات، تأكد من الاتصال بالنت";
+      return;
+    }
+    cleanupSeatingAssignments();
+    if(!dragState)renderCurrentView(); // ما نعيد الرسم وقت ما يكون في سحب شغال، منشان ما ننكش العنصر من تحت الإصبع
+  },()=>statusEl.textContent="⚠ خطأ بالاتصال");
+
+  seatingRef.onSnapshot(s=>{
+    const d=s.exists?s.data():{};
+    placements=d.placements||{};
+    circleSlots=d.circleSlots||{};
+    if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
+  },(e)=>console.error(e));
+}
+
+async function saveData(){try{statusEl.textContent="جارِ الحفظ...";await tablesRef.set({tables:currentData});statusEl.textContent="✔ تم الحفظ";setTimeout(()=>statusEl.textContent="",1500)}catch(e){statusEl.textContent="⚠ فشل الحفظ"}}
+
+// تنظيف الروابط اليتيمة (طاولات محذوفة من صفحة المعازيم) - بيستخدم حذف جزئي لكل حقل لحاله
+function cleanupSeatingAssignments(){
+  const valid=new Set(Object.keys(currentData));
+  const updates={};
+  let changed=false;
+  Object.keys(placements).forEach(k=>{
+    if(!valid.has(k)){delete placements[k];updates[`placements.${k}`]=FieldValue.delete();changed=true}
+  });
+  Object.keys(circleSlots).forEach(i=>{
+    if(!valid.has(circleSlots[i])){delete circleSlots[i];updates[`circleSlots.${i}`]=FieldValue.delete();changed=true}
+  });
+  if(changed){
+    seatingRef.set(updates,{merge:true}).catch(e=>console.error(e));
+  }
+}
+
+function sortedTableKeys(){return Object.keys(currentData).sort((a,b)=>{const x=Number(a),y=Number(b);return !isNaN(x)&&!isNaN(y)?x-y:a.localeCompare(b,"ar")})}
+
+function renderTables(filter){resultsDiv.innerHTML="";let found=false;sortedTableKeys().forEach(table=>{const t=currentData[table],matches=filter?t.names.filter(n=>n.includes(filter)):t.names;if(filter&&!matches.length)return;found=true;const card=document.createElement("div");card.className="card";const list=t.names.map((n,i)=>`<li><span class="${filter&&n.includes(filter)?"highlight":""}">${i+1}. ${n}</span>${isUnlocked?`<span class="del-guest" onclick="deleteGuest('${table}','${n.replace(/'/g,"\\'")}')">✕</span>`:""}</li>`).join("");const actions=isUnlocked?`<span class="table-actions"><span class="edit-table" onclick="renameTable('${table.replace(/'/g,"\\'")}')">✏️ تعديل الاسم</span><span class="del-table" onclick="deleteTable('${table}')">حذف الطاولة</span></span>`:"";const cf=(name,label,val,fn)=>isUnlocked?`<div class="count-field">${label}: <input type="number" min="0" value="${val??""}" placeholder="—" onchange="${fn}('${table}',this.value)"></div>`:`<div class="count-field-readonly">${label}: ${val??"—"}</div>`;card.innerHTML=`<h3>طاولة ${table}${actions}</h3>${cf("count","عدد الأشخاص",t.count,"updateTableCount")}${cf("tablesCount","عدد الطاولات",t.tablesCount,"updateTableTablesCount")}<ul>${list}</ul>${isUnlocked?`<div class="add-guest-row"><input id="add-guest-${table}" placeholder="اسم معزوم جديد"><button onclick="addGuest('${table}')">إضافة</button></div>`:""}`;resultsDiv.appendChild(card)});if(!found)resultsDiv.innerHTML='<p class="no-results">لا يوجد نتائج</p>';updateTotalCount()}
+
+function updateTotalCount(){totalCountEl.textContent=`إجمالي عدد الأشخاص: ${Object.values(currentData).reduce((s,t)=>s+(typeof t.count==="number"?t.count:0),0)}`;totalTablesCountEl.textContent=`إجمالي عدد الطاولات: ${Object.values(currentData).reduce((s,t)=>s+(typeof t.tablesCount==="number"?t.tablesCount:0),0)}`}
+
+searchInput.addEventListener("input",function(){renderTables(this.value.trim()||null)});
+async function addTable(){const a=$("new-table-num"),b=$("new-table-names"),num=a.value.trim();if(!num||currentData[num])return alert("اسم الطاولة فارغ أو مستخدم مسبقاً");currentData[num]={count:null,tablesCount:null,names:b.value.trim()?b.value.split(".").map(x=>x.trim()).filter(Boolean):[]};a.value=b.value="";await saveData()}
+async function deleteTable(t){if(confirm(`متأكد من حذف الطاولة "${t}"؟`)){delete currentData[t];await saveData()}}
+async function updateTableCount(t,v){currentData[t].count=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
+async function updateTableTablesCount(t,v){currentData[t].tablesCount=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
+async function renameTable(old){const n=prompt("اسم الطاولة الجديد:",old);if(n===null)return;const x=n.trim();if(!x||x===old)return;if(currentData[x])return alert("في طاولة تانية مسجلة بنفس هالاسم");const rebuilt={};Object.keys(currentData).forEach(k=>rebuilt[k===old?x:k]=currentData[k]);currentData=rebuilt;await saveData();if(placements[old]){placements[x]=placements[old];delete placements[old];await saveSeatingField(`placements.${old}`,FieldValue.delete());await saveSeatingField(`placements.${x}`,placements[x])}Object.keys(circleSlots).forEach(async i=>{if(circleSlots[i]===old){circleSlots[i]=x;await saveSeatingField(`circleSlots.${i}`,x)}})}
+async function addGuest(t){const i=$(`add-guest-${t}`),n=i.value.trim();if(n){currentData[t].names.push(n);await saveData()}}
+async function deleteGuest(t,n){currentData[t].names=currentData[t].names.filter(x=>x!==n);await saveData()}
+
+function computeLength(k){if(!currentData[k])return 60;return Math.min(40+(currentData[k].count||0)*4,300)}
+
+function renderPlacements(){
+  floorPlan.querySelectorAll(".table-box").forEach(e=>e.remove());
+  Object.keys(placements).forEach(k=>{
+    if(!currentData[k])return;
+    const p=placements[k];
+    const el=document.createElement("div");
+    const heightPx=15;
+    el.className="table-box "+(isUnlocked?"editable":"locked-view");
+    el.style.left=p.x+"%";el.style.top=p.y+"%";
+    el.style.width=computeLength(k)+"px";
+    el.style.height=heightPx+"px";
+    el.style.transform=`translate(-50%,-50%) rotate(${p.rot||0}deg)`;
+    el.dataset.table=k;
+    const t=currentData[k];el.innerHTML=`<div class="box-name">${k}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`;
+    if(isUnlocked){
+      el.addEventListener("pointerdown",onBoxPointerDown);
+      // نبعّد الأزرار عن الشريط حسب سماكته، منشان ما تصير فوق منطقة السحب وتلتقط اللمسة بالغلط
+      const btnOffset=-(heightPx/2+14);
+      [["⟳",-10,ROTATE_STEP],["⟲",16,-ROTATE_STEP]].forEach(([txt,left,d])=>{
+        const b=document.createElement("div");
+        b.className="box-ctrl box-rotate";b.textContent=txt;b.style.left=left+"px";b.style.top=btnOffset+"px";
+        b.onpointerdown=e=>e.stopPropagation();
+        b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
+        el.appendChild(b);
+      });
+      const d=document.createElement("div");
+      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
+      d.onpointerdown=e=>e.stopPropagation();
+      d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
+      el.appendChild(d);
+    }
+    floorPlan.appendChild(el);
+  });
+}
+
+function onBoxPointerDown(e){
+  if(!isUnlocked)return;
+  const box=e.currentTarget,k=box.dataset.table;
+  box.setPointerCapture(e.pointerId);
+  box.classList.add("dragging");
+  dragState={tableKey:k,box,rect:floorPlan.getBoundingClientRect(),startX:e.clientX,startY:e.clientY,origX:placements[k].x,origY:placements[k].y};
+  box.addEventListener("pointermove",onBoxPointerMove);
+  box.addEventListener("pointerup",onBoxPointerUp);
+  box.addEventListener("pointercancel",onBoxPointerUp);
+}
+function onBoxPointerMove(e){
+  if(!dragState)return;
+  const x=Math.max(2,Math.min(98,dragState.origX+(e.clientX-dragState.startX)/dragState.rect.width*100)),
+        y=Math.max(2,Math.min(98,dragState.origY+(e.clientY-dragState.startY)/dragState.rect.height*100));
+  dragState.box.style.left=x+"%";dragState.box.style.top=y+"%";
+  dragState.currentX=x;dragState.currentY=y;
+}
+async function onBoxPointerUp(){
+  if(!dragState)return;
+  const s=dragState;
+  s.box.classList.remove("dragging");
+  s.box.removeEventListener("pointermove",onBoxPointerMove);
+  s.box.removeEventListener("pointerup",onBoxPointerUp);
+  s.box.removeEventListener("pointercancel",onBoxPointerUp);
+  if(s.currentX!==undefined){
+    placements[s.tableKey].x=s.currentX;
+    placements[s.tableKey].y=s.currentY;
+    await saveSeatingField(`placements.${s.tableKey}.x`,s.currentX);
+    await saveSeatingField(`placements.${s.tableKey}.y`,s.currentY);
+  }
+  dragState=null;
+  if(currentView==="seating"){renderCircleSlots();renderPlacements()}
+}
+async function rotateTable(k,d){
+  const newRot=(((placements[k].rot||0)+d)%360+360)%360;
+  placements[k].rot=newRot;
+  await saveSeatingField(`placements.${k}.rot`,newRot);
+  renderPlacements();
+}
+async function removeTableFromMap(k){
+  if(!confirm(`متأكد إنك بدك تشيل "${k}" من الخريطة؟`))return;
+  delete placements[k];
+  await saveSeatingField(`placements.${k}`,FieldValue.delete());
+  renderPlacements();
+}
+
+function getUsedTableKeys(){const s=new Set();Object.keys(placements).forEach(k=>s.add(k));Object.values(circleSlots).forEach(k=>s.add(k));return s}
+
+function openAddTableToMap(){
+  if(!isUnlocked)return alert("افتح القفل 🔒 أولاً");
+  const available=sortedTableKeys().filter(k=>!getUsedTableKeys().has(k));
+  modalBox.innerHTML=`<h3>اختر الطاولة</h3>${available.length?available.map(k=>`<button class="modal-option" onclick="addTableToMap('${k.replace(/'/g,"\\'")}')">${k} (${currentData[k].count||0} شخص)</button>`).join(""):'<p style="text-align:center;color:#777">كل الطاولات مضافة عالخريطة مسبقاً</p>'}<button class="modal-close" onclick="closeModal()">إغلاق</button>`;
+  modalOverlay.style.display="flex";
+}
+async function addTableToMap(k){
+  placements[k]={x:75,y:50,rot:0};
+  await saveSeatingField(`placements.${k}`,placements[k]);
+  closeModal();
+  renderPlacements();
+}
+
+function renderCircleSlots(){
+  floorPlan.querySelectorAll(".slot-box").forEach(e=>e.remove());
+  if(!danceGeo.r)return;
+  const{cx,cy,r}=danceGeo;
+  for(let i=0;i<CIRCLE_SLOTS_COUNT;i++){
+    const angle=-85+i/(CIRCLE_SLOTS_COUNT-1)*170,rad=angle*Math.PI/180,
+          assigned=circleSlots[i],ok=assigned&&currentData[assigned],
+          len=ok?computeLength(assigned):45,
+          x=cx+(r+10+len/2)*Math.cos(rad),y=cy+(r+10+len/2)*Math.sin(rad),
+          slot=document.createElement("div");
+    slot.style.cssText=`left:${x}px;top:${y}px;width:${len}px;height:20px;transform:translate(-50%,-50%) rotate(${angle}deg)`;
+    if(ok){
+      const t=currentData[assigned];
+      slot.className="slot-box filled"+(isUnlocked?" clickable":"");
+      slot.innerHTML=`<div class="box-name">${assigned}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`;
+      if(isUnlocked)slot.onclick=()=>openCircleSlotPicker(i);
+    }else{
+      slot.className="slot-box empty"+(isUnlocked?" clickable":"");
+      slot.textContent="+";
+      if(isUnlocked)slot.onclick=()=>openCircleSlotPicker(i);
+    }
+    floorPlan.appendChild(slot);
+  }
+}
+function openCircleSlotPicker(i){
+  if(!isUnlocked)return;
+  const current=circleSlots[i],used=getUsedTableKeys(),
+        available=sortedTableKeys().filter(k=>!used.has(k)||k===current);
+  let html=`<h3>اختر الطاولة لهالمكان</h3>`;
+  html+=available.length?available.map(k=>{
+    const selected=k===current?" ✓":"";
+    return `<button class="modal-option" onclick="assignCircleSlot(${i},'${k.replace(/'/g,"\\'")}')">${k} (${currentData[k].count||0} شخص)${selected}</button>`;
+  }).join(""):'<p style="text-align:center;color:#777">ما في طاولات متاحة</p>';
+  if(current){
+    html+=`<button class="modal-option" style="background:#fdeceb;color:#c0392b;border-color:#f2c1bd" onclick="assignCircleSlot(${i},null)">✕ إلغاء الربط</button>`;
+  }
+  html+=`<button class="modal-close" onclick="closeModal()">إغلاق</button>`;
+  modalBox.innerHTML=html;
+  modalOverlay.style.display="flex";
+}
+async function assignCircleSlot(i,k){
+  if(k===null){
+    delete circleSlots[i];
+    await saveSeatingField(`circleSlots.${i}`,FieldValue.delete());
+  }else{
+    circleSlots[i]=k;
+    await saveSeatingField(`circleSlots.${i}`,k);
+  }
+  closeModal();
+  renderCircleSlots();
+}
+
+function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
+modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});
+
+/* ---------- نسخة احتياطية: تصدير/استيراد ---------- */
+function exportBackup(){
+  const backup={
+    exportedAt:new Date().toISOString(),
+    tables:currentData,
+    seating:{placements,circleSlots}
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const dateStr=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  a.href=url;
+  a.download=`نسخة-احتياطية-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  statusEl.textContent="✔ تم تحميل النسخة الاحتياطية";
+  setTimeout(()=>statusEl.textContent="",2000);
+}
+
+function importBackup(event){
+  const file=event.target.files[0];
+  event.target.value=""; // نفرّغ الحقل منشان يقبل نفس الملف مرة تانية لو احتاج
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    let data;
+    try{
+      data=JSON.parse(e.target.result);
+    }catch(err){
+      alert("⚠ الملف مش نسخة احتياطية صحيحة (JSON خطأ)");
+      return;
+    }
+    if(!data.tables||typeof data.tables!=="object"){
+      alert("⚠ الملف مش نسخة احتياطية صحيحة (ناقص بيانات الطاولات)");
+      return;
+    }
+    const tableCount=Object.keys(data.tables).length;
+    const exportDate=data.exportedAt?new Date(data.exportedAt).toLocaleString("ar"):"غير معروف";
+    if(!confirm(`هاد الملف فيه ${tableCount} طاولة، اتصدّر بتاريخ: ${exportDate}\n\n⚠ الاستعادة رح تستبدل كل البيانات الحالية بالكامل. متأكد إنك بدك تكمل؟`))return;
+    try{
+      statusEl.textContent="جارِ الاستعادة...";
+      await tablesRef.set({tables:normalizeTables(data.tables)});
+      if(data.seating){
+        await seatingRef.set({
+          placements:data.seating.placements||{},
+          circleSlots:data.seating.circleSlots||{}
+        });
+      }
+      statusEl.textContent="✔ تمت الاستعادة بنجاح";
+      setTimeout(()=>statusEl.textContent="",2500);
+    }catch(err){
+      console.error(err);
+      statusEl.textContent="⚠ فشلت الاستعادة";
+    }
+  };
+  reader.readAsText(file);
+}
+
+startListening();
+</script></body></html>
