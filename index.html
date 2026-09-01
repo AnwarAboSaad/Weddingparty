@@ -54,42 +54,59 @@ function loadSeatingCache(){
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
   const k=String(key);
-  // حدّث الشاشة والنسخة المحلية فوراً، ثم احفظ الحقول المعدّلة فقط في Firestore.
+  // حدّث الشاشة والنسخة المحلية فوراً، وسجّل التعديل المعلّق حتى لا يعيده Snapshot قديم.
   placements[k]={...(placements[k]||{}),...patch};
   cacheSeating();
   pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
   try{
-    const updates={};
-    Object.keys(patch).forEach(field=>{
-      updates[new firebase.firestore.FieldPath("placements",k,field)]=patch[field];
+    // نقرأ آخر نسخة من الوثيقة داخل Transaction ثم ندمج العنصر المعدّل فقط.
+    // بهذه الطريقة يعمل الحفظ حتى لو كانت وثيقة seating-layout غير موجودة بعد،
+    // ولا يمكن أن نمسح بقية الطاولات/العناصر بسبب نسخة محلية قديمة.
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      const data=snap.exists?snap.data():{};
+      const remote=data&&data.placements&&typeof data.placements==="object"?data.placements:{};
+      const mergedPlacement={...(remote[k]||{}),...patch};
+      const mergedPlacements={...remote,[k]:mergedPlacement};
+      tx.set(seatingRef,{placements:mergedPlacements},{merge:true});
     });
-    await seatingRef.update(updates);
     delete pendingPlacementWrites[k];
+    placements[k]={...(placements[k]||{}),...patch};
     cacheSeating();
-    statusEl.textContent="✓ تم حفظ التعديل";
-    setTimeout(()=>{if(statusEl.textContent==="✓ تم حفظ التعديل")statusEl.textContent=""},1200);
+    statusEl.textContent="✓ تم حفظ التعديل على Firebase";
+    setTimeout(()=>{if(statusEl.textContent==="✓ تم حفظ التعديل على Firebase")statusEl.textContent=""},1500);
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    // إذا فشل الحفظ السحابي، لا نرجّع العنصر لمكانه القديم؛ يبقى محفوظاً محلياً.
+    // يبقى التعديل محلياً ولا نعيد العنصر للمكان القديم.
     cacheSeating();
-    statusEl.textContent="⚠ لم يُحفظ على Firebase — سيبقى محلياً";
+    statusEl.textContent="⚠ تعذر الحفظ على Firebase — التعديل محفوظ محلياً";
     return false;
   }
 }
 async function deletePlacement(key){
+  const k=String(key);
   try{
-    await seatingRef.update(new firebase.firestore.FieldPath("placements",String(key)),FieldValue.delete());
-    delete placements[String(key)];
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      if(!snap.exists)return;
+      const data=snap.data()||{};
+      const remote=data.placements&&typeof data.placements==="object"?{...data.placements}:{};
+      if(Object.prototype.hasOwnProperty.call(remote,k))delete remote[k];
+      tx.set(seatingRef,{placements:remote},{merge:true});
+    });
+    delete placements[k];
+    delete pendingPlacementWrites[k];
     cacheSeating();
+    statusEl.textContent="✓ تم الحذف والحفظ";
     return true;
   }catch(e){
     console.error("deletePlacement failed",e);
+    statusEl.textContent="⚠ تعذر حفظ الحذف على Firebase";
     cacheSeating();
     return false;
   }
 }
-
 async function saveCircleSlot(i,value,remove=false){
   try{
     const field=new firebase.firestore.FieldPath("circleSlots",String(i));
