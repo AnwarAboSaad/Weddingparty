@@ -448,11 +448,28 @@ async function assignCircleSlot(i,k){
   }
 }
 
-function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!placements[AISLE_KEY]}
+function updateAisleButtonState(){const b=$("add-aisle-btn");if(b){b.disabled=false;b.textContent=placements[AISLE_KEY]?"✓ الممر موجود":"+ إضافة ممر العروسين"}}
 async function addAisleToMap(){
-  if(!isUnlocked||placements[AISLE_KEY])return;
-  if(await savePlacement(AISLE_KEY,{x:50,y:15,rot:0})){
+  if(!isUnlocked)return alert("افتح القفل 🔒 أولاً");
+  try{
+    const snap=await seatingRef.get();
+    const remote=snap.exists&&snap.data().placements&&typeof snap.data().placements==="object"?snap.data().placements:{};
+    if(remote[AISLE_KEY]){
+      placements[AISLE_KEY]={...remote[AISLE_KEY]};
+      cacheSeating();
+      renderPlacements();
+      return;
+    }
+
+    // حفظ الممر فقط داخل placements، بدون استبدال أي طاولة أو أي عنصر آخر.
+    const aisle={x:50,y:15,rot:0};
+    await seatingRef.set({placements:{...remote,[AISLE_KEY]:aisle}},{merge:true});
+    placements[AISLE_KEY]={...aisle};
+    cacheSeating();
     renderPlacements();
+  }catch(e){
+    console.error("addAisleToMap failed",e);
+    alert("تعذر إضافة الممر. لم يتم تغيير أي بيانات.");
   }
 }
 
