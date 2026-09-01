@@ -21,6 +21,7 @@ firebase.initializeApp(firebaseConfig);const db=firebase.firestore(),tablesRef=d
 const FieldValue=firebase.firestore.FieldValue;
 const defaultTables={};
 let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
+let aisleAutoCreateDone=false; // منشان نضمن إنشاء الممر التلقائي مرة وحدة بس بكل جلسة، ما نعيد الكتابة فوق تعديلات المستخدم
 const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box");
 
 // === حفظ آمن للخريطة ===
@@ -115,14 +116,6 @@ function toggleLock(){if(isUnlocked){isUnlocked=false;updateLockUI();renderCurre
 function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none"}
 function toggleView(){currentView=currentView==="search"?"seating":"search";searchView.style.display=currentView==="search"?"block":"none";seatingView.style.display=currentView==="seating"?"block":"none";chartBtn.textContent=currentView==="search"?"🪑":"🔎";updateLockUI();renderCurrentView()}
 
-function ensureAislePlacement(){
-  if(!placements[AISLE_KEY]){
-    placements[AISLE_KEY]={x:50,y:50,rot:0,type:"aisle",label:"ممر العروسين"};
-    return true;
-  }
-  return false;
-}
-
 function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
 function drawFloorPlan(){const w=floorPlan.clientWidth,h=floorPlan.clientHeight;if(!w||!h)return;floorSvg.setAttribute("viewBox",`0 0 ${w} ${h}`);const cy=h/2,r=Math.min(w,h)*.22,cx=4;danceGeo={cx,cy,r};floorSvg.innerHTML=`<path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none"/>`;danceLabel.style.left=cx+r*.5+"px";danceLabel.style.top=cy+"px"}
 addEventListener("resize",()=>{if(currentView==="seating"){drawFloorPlan();renderCircleSlots();renderPlacements()}});
@@ -159,15 +152,7 @@ function startListening(){
     if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
       circleSlots=d.circleSlots;
     }
-
-    // الممر عنصر أساسي في الخريطة: لا يوجد له زر إضافة ولا يمكن حذفه.
-    // إذا لم يكن موجوداً في Firebase ننشئه مرة واحدة في موضع افتراضي ثم نحفظه.
-    if(ensureAislePlacement()){
-      cacheSeating();
-      savePlacement(AISLE_KEY,placements[AISLE_KEY]);
-    }else{
-      cacheSeating();
-    }
+    cacheSeating();
 
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
   },(e)=>{
@@ -346,7 +331,7 @@ function renderPlacements(){
         b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
         el.appendChild(b);
       });
-      if(!aisle){
+      if(true){
         const d=document.createElement("div");
         d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
         d.onpointerdown=e=>e.stopPropagation();
@@ -356,7 +341,6 @@ function renderPlacements(){
     }
     floorPlan.appendChild(el);
   });
-  updateAisleButtonState();
 }
 
 function onBoxPointerDown(e){
