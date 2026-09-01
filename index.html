@@ -52,16 +52,22 @@ function loadSeatingCache(){
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
   try{
-    // حفظ مباشر على مستوى الحقل، بدون استبدال خريطة placements كاملة.
-    // هذا يسمح بإضافة/تحريك/تدوير/حذف أي طاولة أو ممر بشكل مستقل.
-    const field=new firebase.firestore.FieldPath("placements",String(key));
-    await seatingRef.set({placements:{[String(key)]:patch}},{merge:true});
-    placements[String(key)]={...(placements[String(key)]||{}),...patch};
+    // نقرأ آخر نسخة من Firebase داخل Transaction ثم نضيف/نعدّل هذا العنصر فقط.
+    // مهم: لا نستخدم set({placements:{...}}) لأن ذلك قد يستبدل بقية الخريطة.
+    const k=String(key);
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      const remote=snap.exists&&snap.data().placements&&typeof snap.data().placements==="object"
+        ?snap.data().placements:{};
+      const merged={...remote,[k]:{...(remote[k]||{}),...patch}};
+      tx.set(seatingRef,{placements:merged},{merge:true});
+    });
+    placements[k]={...(placements[k]||{}),...patch};
     cacheSeating();
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    // لا نعرض رسالة فشل مزعجة للمستخدم؛ نبقي البيانات المحلية حتى تعود الشبكة.
+    // لا نمسح أي بيانات محلية عند فشل الاتصال.
     cacheSeating();
     return false;
   }
