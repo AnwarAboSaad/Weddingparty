@@ -5,13 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>البحث عن المعازيم</title>
 <style>
-*{box-sizing:border-box}body{font-family:Tahoma,sans-serif;background:#f2ece1;margin:0;padding:20px;min-height:100vh}#app{max-width:1200px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}header h1{font-size:20px;margin:0;flex:1;text-align:center;color:#333}.icon-btn{background:#b08d57;color:#fff;border:0;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}#lock-btn.unlocked{background:#4a8c4a}#chart-btn{background:#6a5acd}input{padding:12px;width:100%;font-size:16px;margin-bottom:14px;text-align:right;border:1px solid #ccc;border-radius:8px;font-family:inherit}.tables-container{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}@media(max-width:650px){.tables-container{grid-template-columns:1fr}}.card,.admin-panel{background:#fff;border-radius:12px;box-shadow:0 2px 5px #0002;padding:15px;text-align:right}.card h3{margin:0 0 10px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}.table-actions{display:flex;gap:6px}.del-table,.edit-table{cursor:pointer;font-size:13px;border-radius:6px;padding:2px 8px;background:#fff}.del-table{color:#c0392b;border:1px solid #c0392b}.edit-table{color:#6a5acd;border:1px solid #6a5acd}.count-field{font-size:13px;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}.count-field input{width:60px;padding:4px 6px;margin:0;font-size:13px;text-align:center}.count-field-readonly{font-size:13px;color:#777;margin-bottom:8px}.card ul{list-style:none;padding:0;margin:0}.card li{font-size:15px;margin-bottom:4px;display:flex;justify-content:space-between}.del-guest{color:#c0392b;cursor:pointer;font-weight:bold;padding:0 6px}.highlight{background:#fffa9c;font-weight:bold;padding:2px 5px;border-radius:4px}.no-results{text-align:center;grid-column:1/-1}.add-guest-row{display:flex;gap:6px;margin-top:8px}.add-guest-row input{margin:0}.add-guest-row button,.admin-panel button{background:#4a8c4a;color:#fff;border:0;border-radius:8px;padding:0 14px;cursor:pointer}.admin-panel{margin-bottom:20px}.admin-panel .row{display:flex;gap:10px}.admin-panel .row input:first-child{max-width:120px}#save-status{font-size:12px;color:#4a8c4a}#backup-bar{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}#export-btn,#import-btn{background:#6a5acd;color:#fff;border:0;border-radius:16px;padding:8px 14px;font-size:13px;cursor:pointer}#import-btn{background:#b08d57}#seating-view{display:none}#seating-toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}#add-table-map-btn,#add-aisle-btn{background:#4a8c4a;color:#fff;border:0;border-radius:20px;padding:10px 16px;cursor:pointer}#add-aisle-btn{background:#6a5acd}#add-aisle-btn:disabled{background:#ccc}#floor-plan-wrapper{background:#fff;border-radius:16px;box-shadow:0 2px 8px #0002;overflow:visible;margin-bottom:16px}#floor-plan{position:relative;width:100%;height:760px;background:#fff;touch-action:pinch-zoom}#floor-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.floor-label{position:absolute;color:#b08d57;font-size:13px;text-align:center;z-index:1;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}.total-count-label{text-align:center;color:#555;font-size:14px;font-weight:bold;margin:0 0 12px}.dev-credit{text-align:center;color:#bbb;font-size:11px;margin:4px 0 12px}.table-box,.slot-box,.aisle-box{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;user-select:none;z-index:2}.table-box{border-radius:8px;background:#b08d57;color:#fff;box-shadow:0 2px 6px #0003;touch-action:none}.table-box .box-name,.slot-box .box-name{font-size:8px;font-weight:bold}.table-box .box-count,.slot-box .box-count{font-size:6px}.editable{cursor:grab}.dragging{cursor:grabbing;opacity:.85;z-index:10}.box-ctrl{position:absolute;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:11}.box-rotate{background:#6a5acd}.box-delete{background:#c0392b}.slot-box{border-radius:6px}.slot-box.filled{background:#8a6d3b;color:#fff;box-shadow:0 2px 6px #0003}.slot-box.empty{background:#f7f2ea;border:2px dashed #b08d57;color:#b08d57;font-size:10px}.slot-box.clickable,.slot-box.filled.clickable{cursor:pointer}.aisle-box{border-radius:4px;background:repeating-linear-gradient(45deg,#6a5acd,#6a5acd 6px,#7a6bd9 6px,#7a6bd9 12px);color:#fff;font-size:9px;font-weight:bold;box-shadow:0 2px 6px #0003;touch-action:none}#modal-overlay{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:999;padding:20px}#modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:360px;max-height:80vh;overflow:auto}#modal-box h3{text-align:center}.modal-option,.modal-close{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:8px;cursor:pointer}.modal-option{background:#f7f2ea;border:1px solid #ddd;text-align:right}.modal-close{background:#eee;border:0}
+*{box-sizing:border-box}body{font-family:Tahoma,sans-serif;background:#f2ece1;margin:0;padding:20px;min-height:100vh}#app{max-width:1200px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}header h1{font-size:20px;margin:0;flex:1;text-align:center;color:#333}.icon-btn{background:#b08d57;color:#fff;border:0;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}#lock-btn.unlocked{background:#4a8c4a}#chart-btn{background:#6a5acd}input{padding:12px;width:100%;font-size:16px;margin-bottom:14px;text-align:right;border:1px solid #ccc;border-radius:8px;font-family:inherit}.tables-container{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}@media(max-width:650px){.tables-container{grid-template-columns:1fr}}.card,.admin-panel{background:#fff;border-radius:12px;box-shadow:0 2px 5px #0002;padding:15px;text-align:right}.card h3{margin:0 0 10px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}.table-actions{display:flex;gap:6px}.del-table,.edit-table{cursor:pointer;font-size:13px;border-radius:6px;padding:2px 8px;background:#fff}.del-table{color:#c0392b;border:1px solid #c0392b}.edit-table{color:#6a5acd;border:1px solid #6a5acd}.count-field{font-size:13px;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}.count-field input{width:60px;padding:4px 6px;margin:0;font-size:13px;text-align:center}.count-field-readonly{font-size:13px;color:#777;margin-bottom:8px}.card ul{list-style:none;padding:0;margin:0}.card li{font-size:15px;margin-bottom:4px;display:flex;justify-content:space-between}.del-guest{color:#c0392b;cursor:pointer;font-weight:bold;padding:0 6px}.highlight{background:#fffa9c;font-weight:bold;padding:2px 5px;border-radius:4px}.no-results{text-align:center;grid-column:1/-1}.add-guest-row{display:flex;gap:6px;margin-top:8px}.add-guest-row input{margin:0}.add-guest-row button,.admin-panel button{background:#4a8c4a;color:#fff;border:0;border-radius:8px;padding:0 14px;cursor:pointer}.admin-panel{margin-bottom:20px}.admin-panel .row{display:flex;gap:10px}.admin-panel .row input:first-child{max-width:120px}#save-status{font-size:12px;color:#4a8c4a}.backup-panel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 14px}.backup-btn{border:0;border-radius:10px;padding:9px 13px;cursor:pointer;font-family:inherit;font-size:13px}.backup-download{background:#b08d57;color:#fff}.backup-import{background:#6a5acd;color:#fff}.backup-input{display:none}#seating-view{display:none}#seating-toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}#add-table-map-btn,#add-aisle-btn{background:#4a8c4a;color:#fff;border:0;border-radius:20px;padding:10px 16px;cursor:pointer}#add-aisle-btn{background:#6a5acd}#add-aisle-btn:disabled{background:#ccc}#floor-plan-wrapper{background:#fff;border-radius:16px;box-shadow:0 2px 8px #0002;overflow:visible;margin-bottom:16px}#floor-plan{position:relative;width:100%;height:760px;background:#fff;touch-action:pinch-zoom}#floor-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.floor-label{position:absolute;color:#b08d57;font-size:13px;text-align:center;z-index:1;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}.total-count-label{text-align:center;color:#555;font-size:14px;font-weight:bold;margin:0 0 12px}.dev-credit{text-align:center;color:#bbb;font-size:11px;margin:4px 0 12px}.table-box,.slot-box,.aisle-box{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;user-select:none;z-index:2}.table-box{border-radius:8px;background:#b08d57;color:#fff;box-shadow:0 2px 6px #0003;touch-action:none}.table-box .box-name,.slot-box .box-name{font-size:8px;font-weight:bold}.table-box .box-count,.slot-box .box-count{font-size:6px}.editable{cursor:grab}.dragging{cursor:grabbing;opacity:.85;z-index:10}.box-ctrl{position:absolute;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:11}.box-rotate{background:#6a5acd}.box-delete{background:#c0392b}.slot-box{border-radius:6px}.slot-box.filled{background:#8a6d3b;color:#fff;box-shadow:0 2px 6px #0003}.slot-box.empty{background:#f7f2ea;border:2px dashed #b08d57;color:#b08d57;font-size:10px}.slot-box.clickable,.slot-box.filled.clickable{cursor:pointer}.aisle-box{border-radius:4px;background:repeating-linear-gradient(45deg,#6a5acd,#6a5acd 6px,#7a6bd9 6px,#7a6bd9 12px);color:#fff;font-size:9px;font-weight:bold;box-shadow:0 2px 6px #0003;touch-action:none}#modal-overlay{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:999;padding:20px}#modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:360px;max-height:80vh;overflow:auto}#modal-box h3{text-align:center}.modal-option,.modal-close{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:8px;cursor:pointer}.modal-option{background:#f7f2ea;border:1px solid #ddd;text-align:right}.modal-close{background:#eee;border:0}
 </style>
 </head>
 <body>
-<div id="app"><header><button id="lock-btn" class="icon-btn" onclick="toggleLock()">🔒</button><h1>👰🤵 Abdo & Sulaf</h1><button id="chart-btn" class="icon-btn" onclick="toggleView()">🪑</button></header><div style="text-align:center;margin-bottom:6px"><span id="save-status"></span></div>
-<div id="backup-bar" style="display:none;text-align:center;margin-bottom:14px"><button id="export-btn" onclick="exportBackup()">⬇️ نسخة احتياطية</button><button id="import-btn" onclick="document.getElementById('import-file').click()">⬆️ استعادة من ملف</button><input type="file" id="import-file" accept="application/json" style="display:none" onchange="importBackup(event)"></div>
-<div id="search-view"><input id="search" placeholder="اكتب الاسم هنا..."><p id="total-count" class="total-count-label"></p><p id="total-tables-count" class="total-count-label"></p><div id="admin-panel" class="admin-panel" style="display:none"><h3>➕ إضافة طاولة جديدة</h3><div class="row"><input id="new-table-num" placeholder="رقم/اسم الطاولة"><input id="new-table-names" placeholder="الأسماء (أفصل بنقطة)"><button onclick="addTable()">إضافة</button></div></div><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="results" class="tables-container"></div></div>
+<div id="app"><header><button id="lock-btn" class="icon-btn" onclick="toggleLock()">🔒</button><h1>👰🤵 Abdo & Sulaf</h1><button id="chart-btn" class="icon-btn" onclick="toggleView()">🪑</button></header><div style="text-align:center;margin-bottom:10px"><span id="save-status"></span></div>
+<div id="search-view"><input id="search" placeholder="اكتب الاسم هنا..."><div class="backup-panel"><button class="backup-btn backup-download" onclick="downloadBackup()">⬇️ تنزيل نسخة احتياطية</button><button class="backup-btn backup-import" onclick="document.getElementById('backup-file').click()">⬆️ استيراد نسخة احتياطية</button><input id="backup-file" class="backup-input" type="file" accept="application/json,.json" onchange="importBackup(event)"></div><p id="total-count" class="total-count-label"></p><p id="total-tables-count" class="total-count-label"></p><div id="admin-panel" class="admin-panel" style="display:none"><h3>➕ إضافة طاولة جديدة</h3><div class="row"><input id="new-table-num" placeholder="رقم/اسم الطاولة"><input id="new-table-names" placeholder="الأسماء (أفصل بنقطة)"><button onclick="addTable()">إضافة</button></div></div><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="results" class="tables-container"></div></div>
 <div id="seating-view"><p class="dev-credit">Developer: Anwar Abo Saad</p><p class="dev-credit">Designer: Mazen Ghanoum</p><p class="dev-credit">Organiser: Hossam Abo Saad</p><div id="seating-toolbar" style="display:none"><button id="add-table-map-btn" onclick="openAddTableToMap()">+ إضافة طاولة</button><button id="add-aisle-btn" onclick="addAisleToMap()">+ إضافة ممر العروسين</button></div><div id="floor-plan-wrapper"><div id="floor-plan"><svg id="floor-svg"></svg><div id="dance-label" class="floor-label">ساحة<br>الرقص</div></div></div></div></div>
 <div id="modal-overlay"><div id="modal-box"></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -20,8 +19,9 @@ const ADMIN_PASSWORD="2412";
 const firebaseConfig={apiKey:"AIzaSyDRGodtyKvHhIyO33AeSHOFcTTzkEKEXWE",authDomain:"wedding-5ee28.firebaseapp.com",projectId:"wedding-5ee28",storageBucket:"wedding-5ee28.firebasestorage.app",messagingSenderId:"446620021297",appId:"1:446620021297:web:f1c6efca483f0a09f01b10"};
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore(),tablesRef=db.collection("app").doc("guest-tables"),seatingRef=db.collection("app").doc("seating-layout");
 const FieldValue=firebase.firestore.FieldValue;
-let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,ROTATE_STEP=5;
-const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box"),backupBar=$("backup-bar");
+const defaultTables={};
+let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
+const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box");
 
 // === حفظ جزئي: يحدّث الحقل المطلوب بس داخل وثيقة الخريطة، بدون ما يلمس باقي الحقول ===
 // هيك لو جهازين فتحوا الصفحة بنفس الوقت، تعديل كل واحد فيهن بيضل محفوظ ومابيمسح تعديل التاني
@@ -36,7 +36,7 @@ async function saveSeatingField(fieldPath, value) {
 }
 
 function toggleLock(){if(isUnlocked){isUnlocked=false;updateLockUI();renderCurrentView();return}const v=prompt("أدخل كلمة السر للفتح:");if(v===null)return;if(v===ADMIN_PASSWORD){isUnlocked=true;updateLockUI();renderCurrentView()}else alert("كلمة السر غير صحيحة")}
-function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none";backupBar.style.display=isUnlocked?"flex":"none"}
+function updateLockUI(){lockBtn.textContent=isUnlocked?"🔓":"🔒";lockBtn.classList.toggle("unlocked",isUnlocked);adminPanel.style.display=isUnlocked&&currentView==="search"?"block":"none";seatingToolbar.style.display=isUnlocked&&currentView==="seating"?"flex":"none"}
 function toggleView(){currentView=currentView==="search"?"seating":"search";searchView.style.display=currentView==="search"?"block":"none";seatingView.style.display=currentView==="seating"?"block":"none";chartBtn.textContent=currentView==="search"?"🪑":"🔎";updateLockUI();renderCurrentView()}
 function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
 function drawFloorPlan(){const w=floorPlan.clientWidth,h=floorPlan.clientHeight;if(!w||!h)return;floorSvg.setAttribute("viewBox",`0 0 ${w} ${h}`);const cy=h/2,r=Math.min(w,h)*.22,cx=4;danceGeo={cx,cy,r};floorSvg.innerHTML=`<path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r}" stroke="#b08d57" stroke-width="2" stroke-dasharray="7 7" fill="none"/>`;danceLabel.style.left=cx+r*.5+"px";danceLabel.style.top=cy+"px"}
@@ -46,42 +46,133 @@ function normalizeTables(data){const out={};Object.keys(data).forEach(k=>{const 
 
 function startListening(){
   statusEl.textContent="جارِ الاتصال...";
-  tablesRef.onSnapshot(async s=>{
-    if(s.exists&&s.data().tables&&Object.keys(s.data().tables).length>0){
-      currentData=normalizeTables(s.data().tables);
+  tablesRef.onSnapshot(s=>{
+    if(s.exists){
+      const raw=s.data().tables;
+      // مهم: القراءة الفارغة لا تعني أن التطبيق يجب أن يكتب بيانات فارغة فوق Firebase.
+      currentData=raw&&typeof raw==="object"?normalizeTables(raw):{};
       statusEl.textContent="";
     }else{
-      // القاعدة طالعة فاضية أو مش موصولة - ما منكتب فوقها أبداً، بس منبيّن تحذير ومنستنى
-      statusEl.textContent="⚠ ما وصلت البيانات، تأكد من الاتصال بالنت";
-      return;
+      // لا ننشئ مستنداً فارغاً تلقائياً. هذا يمنع تشغيل التطبيق لأول مرة/بعد حذف مستند
+      // من أن يكتب {} فوق قاعدة البيانات أو البيانات الاحتياطية.
+      currentData={};
+      statusEl.textContent="";
     }
-    cleanupSeatingAssignments();
-    if(!dragState)renderCurrentView(); // ما نعيد الرسم وقت ما يكون في سحب شغال، منشان ما ننكش العنصر من تحت الإصبع
-  },()=>statusEl.textContent="⚠ خطأ بالاتصال");
+    // ممنوع تنظيف الخريطة تلقائياً بناءً على قراءة ناقصة؛ هذا كان سبباً محتملاً لحذف
+    // placements / circleSlots عندما تصل قراءة فارغة أو متأخرة من Firebase.
+    if(!dragState)renderCurrentView();
+  },e=>{console.error(e);statusEl.textContent="⚠ خطأ بالاتصال"});
 
   seatingRef.onSnapshot(s=>{
     const d=s.exists?s.data():{};
-    placements=d.placements||{};
-    circleSlots=d.circleSlots||{};
+    placements=d.placements&&typeof d.placements==="object"?d.placements:{};
+    circleSlots=d.circleSlots&&typeof d.circleSlots==="object"?d.circleSlots:{};
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
   },(e)=>console.error(e));
 }
 
-async function saveData(){try{statusEl.textContent="جارِ الحفظ...";await tablesRef.set({tables:currentData});statusEl.textContent="✔ تم الحفظ";setTimeout(()=>statusEl.textContent="",1500)}catch(e){statusEl.textContent="⚠ فشل الحفظ"}}
+// حفظ آمن: لا يستبدل خريطة tables كاملة، ولا يسمح بكتابة {} فوق بيانات موجودة.
+// merge=true يحافظ على الحقول الأخرى الموجودة في المستند.
+async function saveData(){
+  if(!Object.keys(currentData).length){
+    console.warn("Blocked empty save to protect Firestore data.");
+    statusEl.textContent="⚠ تم منع حفظ بيانات فارغة حمايةً للبيانات";
+    setTimeout(()=>statusEl.textContent="",2500);
+    return false;
+  }
+  try{
+    statusEl.textContent="جارِ الحفظ...";
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      const remote=snap.exists&&snap.data().tables&&typeof snap.data().tables==="object"?snap.data().tables:{};
+      if(Object.keys(remote).length>0 && Object.keys(currentData).length===0){
+        throw new Error("EMPTY_SAVE_BLOCKED");
+      }
+      // ندمج الجداول الحالية بدلاً من استبدال tables بالكامل.
+      tx.set(tablesRef,{tables:currentData},{merge:true});
+    });
+    statusEl.textContent="✔ تم الحفظ";
+    setTimeout(()=>statusEl.textContent="",1500);
+    return true;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent=e.message==="EMPTY_SAVE_BLOCKED"?"⚠ تم منع حذف البيانات":"⚠ فشل الحفظ";
+    setTimeout(()=>statusEl.textContent="",2500);
+    return false;
+  }
+}
 
-// تنظيف الروابط اليتيمة (طاولات محذوفة من صفحة المعازيم) - بيستخدم حذف جزئي لكل حقل لحاله
-function cleanupSeatingAssignments(){
-  const valid=new Set(Object.keys(currentData));
-  const updates={};
-  let changed=false;
-  Object.keys(placements).forEach(k=>{
-    if(!valid.has(k)){delete placements[k];updates[`placements.${k}`]=FieldValue.delete();changed=true}
-  });
-  Object.keys(circleSlots).forEach(i=>{
-    if(!valid.has(circleSlots[i])){delete circleSlots[i];updates[`circleSlots.${i}`]=FieldValue.delete();changed=true}
-  });
-  if(changed){
-    seatingRef.set(updates,{merge:true}).catch(e=>console.error(e));
+// حذف طاولة فقط عند طلب المستخدم صراحةً. لا يوجد حذف تلقائي بسبب القراءة أو الاتصال.
+async function deleteTableSafely(t){
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      if(!snap.exists)throw new Error("DOCUMENT_NOT_FOUND");
+      const remote=snap.data().tables||{};
+      if(!Object.prototype.hasOwnProperty.call(remote,t))throw new Error("TABLE_NOT_FOUND");
+      tx.update(tablesRef,new firebase.firestore.FieldPath("tables",String(t)),FieldValue.delete());
+    });
+    return true;
+  }catch(e){console.error(e);alert("لم يتم حذف الطاولة. البيانات بقيت محفوظة.");return false}
+}
+
+// === نسخة احتياطية محلية للهاتف ===
+function makeBackupObject(){
+  return {
+    backupVersion:1,
+    createdAt:new Date().toISOString(),
+    projectId:firebaseConfig.projectId,
+    guestTables:currentData,
+    seating:{placements:placements,circleSlots:circleSlots}
+  };
+}
+
+function downloadBackup(){
+  if(!Object.keys(currentData).length){alert("لا توجد بيانات طاولات حالياً لعمل نسخة احتياطية.");return;}
+  const backup=makeBackupObject();
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const stamp=new Date().toISOString().replace(/[:.]/g,"-");
+  a.href=url;a.download=`wedding-backup-${stamp}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  alert("تم تجهيز النسخة الاحتياطية. احفظ الملف على هاتفك أو iCloud/Google Drive.");
+}
+
+async function importBackup(event){
+  const file=event.target.files&&event.target.files[0];
+  event.target.value="";
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+    if(!backup||backup.backupVersion!==1||!backup.guestTables||typeof backup.guestTables!=="object"){
+      throw new Error("INVALID_BACKUP");
+    }
+    const restoredTables=normalizeTables(backup.guestTables);
+    const restoredSeating=backup.seating&&typeof backup.seating==="object"?backup.seating:{};
+    const restoredPlacements=restoredSeating.placements&&typeof restoredSeating.placements==="object"?restoredSeating.placements:{};
+    const restoredCircleSlots=restoredSeating.circleSlots&&typeof restoredSeating.circleSlots==="object"?restoredSeating.circleSlots:{};
+    if(!Object.keys(restoredTables).length)throw new Error("EMPTY_BACKUP");
+    if(!confirm(`النسخة تحتوي على ${Object.keys(restoredTables).length} طاولة.\nسيتم استرجاع البيانات من الملف بدون حذف أي بيانات موجودة حالياً. متابعة؟`))return;
+
+    // الاستيراد هنا استرجاع/دمج فقط: لا نحذف أي حقل موجود حالياً.
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      const remote=snap.exists&&snap.data().tables&&typeof snap.data().tables==="object"?snap.data().tables:{};
+      const merged={...remote,...restoredTables};
+      tx.set(tablesRef,{tables:merged},{merge:true});
+    });
+    await seatingRef.set({placements:restoredPlacements,circleSlots:restoredCircleSlots},{merge:true});
+    currentData=restoredTables;
+    placements={...placements,...restoredPlacements};
+    circleSlots={...circleSlots,...restoredCircleSlots};
+    renderCurrentView();
+    alert("تم استيراد النسخة الاحتياطية بنجاح.");
+  }catch(e){
+    console.error(e);
+    alert("فشل استيراد النسخة الاحتياطية. الملف لم يغيّر قاعدة البيانات.");
   }
 }
 
@@ -93,29 +184,55 @@ function updateTotalCount(){totalCountEl.textContent=`إجمالي عدد الأ
 
 searchInput.addEventListener("input",function(){renderTables(this.value.trim()||null)});
 async function addTable(){const a=$("new-table-num"),b=$("new-table-names"),num=a.value.trim();if(!num||currentData[num])return alert("اسم الطاولة فارغ أو مستخدم مسبقاً");currentData[num]={count:null,tablesCount:null,names:b.value.trim()?b.value.split(".").map(x=>x.trim()).filter(Boolean):[]};a.value=b.value="";await saveData()}
-async function deleteTable(t){if(confirm(`متأكد من حذف الطاولة "${t}"؟`)){delete currentData[t];await saveData()}}
+async function deleteTable(t){if(confirm(`متأكد من حذف الطاولة "${t}"؟\nلن يتم حذف أي بيانات أخرى.`)){if(await deleteTableSafely(t)){delete currentData[t];renderCurrentView()}}}
 async function updateTableCount(t,v){currentData[t].count=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
 async function updateTableTablesCount(t,v){currentData[t].tablesCount=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
-async function renameTable(old){const n=prompt("اسم الطاولة الجديد:",old);if(n===null)return;const x=n.trim();if(!x||x===old)return;if(currentData[x])return alert("في طاولة تانية مسجلة بنفس هالاسم");const rebuilt={};Object.keys(currentData).forEach(k=>rebuilt[k===old?x:k]=currentData[k]);currentData=rebuilt;await saveData();if(placements[old]){placements[x]=placements[old];delete placements[old];await saveSeatingField(`placements.${old}`,FieldValue.delete());await saveSeatingField(`placements.${x}`,placements[x])}Object.keys(circleSlots).forEach(async i=>{if(circleSlots[i]===old){circleSlots[i]=x;await saveSeatingField(`circleSlots.${i}`,x)}})}
+async function renameTable(old){
+  const n=prompt("اسم الطاولة الجديد:",old);if(n===null)return;
+  const x=n.trim();if(!x||x===old)return;
+  if(currentData[x])return alert("في طاولة تانية مسجلة بنفس هالاسم");
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      if(!snap.exists)throw new Error("DOCUMENT_NOT_FOUND");
+      const remote=snap.data().tables||{};
+      if(!remote[old])throw new Error("TABLE_NOT_FOUND");
+      if(remote[x])throw new Error("TARGET_EXISTS");
+      tx.set(tablesRef,{tables:{[x]:remote[old]}},{merge:true});
+      tx.update(tablesRef,new firebase.firestore.FieldPath("tables",String(old)),FieldValue.delete());
+    });
+    const value=currentData[old];
+    const rebuilt={};Object.keys(currentData).forEach(k=>rebuilt[k===old?x:k]=currentData[k]);currentData=rebuilt;
+    if(placements[old]){
+      placements[x]=placements[old];delete placements[old];
+      await saveSeatingField(`placements.${old}`,FieldValue.delete());
+      await saveSeatingField(`placements.${x}`,placements[x]);
+    }
+    Object.keys(circleSlots).forEach(async i=>{if(circleSlots[i]===old){circleSlots[i]=x;await saveSeatingField(`circleSlots.${i}`,x)}});
+    renderCurrentView();
+  }catch(e){console.error(e);alert("لم يتم تغيير اسم الطاولة. البيانات بقيت محفوظة.");}
+}
+
 async function addGuest(t){const i=$(`add-guest-${t}`),n=i.value.trim();if(n){currentData[t].names.push(n);await saveData()}}
 async function deleteGuest(t,n){currentData[t].names=currentData[t].names.filter(x=>x!==n);await saveData()}
 
-function computeLength(k){if(!currentData[k])return 60;return Math.min(40+(currentData[k].count||0)*4,300)}
+function computeLength(k){if(k===AISLE_KEY)return 200;if(!currentData[k])return 60;return Math.min(40+(currentData[k].count||0)*4,300)}
 
 function renderPlacements(){
-  floorPlan.querySelectorAll(".table-box").forEach(e=>e.remove());
+  floorPlan.querySelectorAll(".table-box,.aisle-box").forEach(e=>e.remove());
   Object.keys(placements).forEach(k=>{
-    if(!currentData[k])return;
-    const p=placements[k];
+    const p=placements[k],aisle=k===AISLE_KEY;
+    if(!aisle&&!currentData[k])return;
     const el=document.createElement("div");
-    const heightPx=15;
-    el.className="table-box "+(isUnlocked?"editable":"locked-view");
+    const heightPx=aisle?12:15;
+    el.className=(aisle?"aisle-box ":"table-box ")+(isUnlocked?"editable":"locked-view");
     el.style.left=p.x+"%";el.style.top=p.y+"%";
-    el.style.width=computeLength(k)+"px";
+    el.style.width=(aisle?200:computeLength(k))+"px";
     el.style.height=heightPx+"px";
     el.style.transform=`translate(-50%,-50%) rotate(${p.rot||0}deg)`;
     el.dataset.table=k;
-    const t=currentData[k];el.innerHTML=`<div class="box-name">${k}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`;
+    if(aisle)el.textContent="ممر العروسين";
+    else{const t=currentData[k];el.innerHTML=`<div class="box-name">${k}</div><div class="box-count">${t.count??"—"}/${t.tablesCount??"—"}</div>`}
     if(isUnlocked){
       el.addEventListener("pointerdown",onBoxPointerDown);
       // نبعّد الأزرار عن الشريط حسب سماكته، منشان ما تصير فوق منطقة السحب وتلتقط اللمسة بالغلط
@@ -135,6 +252,7 @@ function renderPlacements(){
     }
     floorPlan.appendChild(el);
   });
+  updateAisleButtonState();
 }
 
 function onBoxPointerDown(e){
@@ -177,13 +295,14 @@ async function rotateTable(k,d){
   renderPlacements();
 }
 async function removeTableFromMap(k){
-  if(!confirm(`متأكد إنك بدك تشيل "${k}" من الخريطة؟`))return;
+  const label=k===AISLE_KEY?"ممر العروسين":k;
+  if(!confirm(`متأكد إنك بدك تشيل "${label}" من الخريطة؟`))return;
   delete placements[k];
   await saveSeatingField(`placements.${k}`,FieldValue.delete());
   renderPlacements();
 }
 
-function getUsedTableKeys(){const s=new Set();Object.keys(placements).forEach(k=>s.add(k));Object.values(circleSlots).forEach(k=>s.add(k));return s}
+function getUsedTableKeys(){const s=new Set();Object.keys(placements).forEach(k=>{if(k!==AISLE_KEY)s.add(k)});Object.values(circleSlots).forEach(k=>s.add(k));return s}
 
 function openAddTableToMap(){
   if(!isUnlocked)return alert("افتح القفل 🔒 أولاً");
@@ -250,68 +369,15 @@ async function assignCircleSlot(i,k){
   renderCircleSlots();
 }
 
+function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!placements[AISLE_KEY]}
+async function addAisleToMap(){
+  if(!isUnlocked||placements[AISLE_KEY])return;
+  placements[AISLE_KEY]={x:50,y:15,rot:0};
+  await saveSeatingField(`placements.${AISLE_KEY}`,placements[AISLE_KEY]);
+  renderPlacements();
+}
+
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
 modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});
-
-/* ---------- نسخة احتياطية: تصدير/استيراد ---------- */
-function exportBackup(){
-  const backup={
-    exportedAt:new Date().toISOString(),
-    tables:currentData,
-    seating:{placements,circleSlots}
-  };
-  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  const dateStr=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
-  a.href=url;
-  a.download=`نسخة-احتياطية-${dateStr}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  statusEl.textContent="✔ تم تحميل النسخة الاحتياطية";
-  setTimeout(()=>statusEl.textContent="",2000);
-}
-
-function importBackup(event){
-  const file=event.target.files[0];
-  event.target.value=""; // نفرّغ الحقل منشان يقبل نفس الملف مرة تانية لو احتاج
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    let data;
-    try{
-      data=JSON.parse(e.target.result);
-    }catch(err){
-      alert("⚠ الملف مش نسخة احتياطية صحيحة (JSON خطأ)");
-      return;
-    }
-    if(!data.tables||typeof data.tables!=="object"){
-      alert("⚠ الملف مش نسخة احتياطية صحيحة (ناقص بيانات الطاولات)");
-      return;
-    }
-    const tableCount=Object.keys(data.tables).length;
-    const exportDate=data.exportedAt?new Date(data.exportedAt).toLocaleString("ar"):"غير معروف";
-    if(!confirm(`هاد الملف فيه ${tableCount} طاولة، اتصدّر بتاريخ: ${exportDate}\n\n⚠ الاستعادة رح تستبدل كل البيانات الحالية بالكامل. متأكد إنك بدك تكمل؟`))return;
-    try{
-      statusEl.textContent="جارِ الاستعادة...";
-      await tablesRef.set({tables:normalizeTables(data.tables)});
-      if(data.seating){
-        await seatingRef.set({
-          placements:data.seating.placements||{},
-          circleSlots:data.seating.circleSlots||{}
-        });
-      }
-      statusEl.textContent="✔ تمت الاستعادة بنجاح";
-      setTimeout(()=>statusEl.textContent="",2500);
-    }catch(err){
-      console.error(err);
-      statusEl.textContent="⚠ فشلت الاستعادة";
-    }
-  };
-  reader.readAsText(file);
-}
-
 startListening();
 </script></body></html>
