@@ -109,7 +109,9 @@ function toggleView(){currentView=currentView==="search"?"seating":"search";sear
 function ensureAislePlacement(){
   if(!placements[AISLE_KEY]){
     placements[AISLE_KEY]={x:50,y:50,rot:0,type:"aisle",label:"ممر العروسين"};
+    return true;
   }
+  return false;
 }
 
 function renderCurrentView(){currentView==="search"?renderTables(searchInput.value.trim()||null):(drawFloorPlan(),renderCircleSlots(),renderPlacements())}
@@ -148,7 +150,16 @@ function startListening(){
     if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
       circleSlots=d.circleSlots;
     }
-    cacheSeating();
+
+    // الممر عنصر أساسي في الخريطة: لا يوجد له زر إضافة ولا يمكن حذفه.
+    // إذا لم يكن موجوداً في Firebase ننشئه مرة واحدة في موضع افتراضي ثم نحفظه.
+    if(ensureAislePlacement()){
+      cacheSeating();
+      savePlacement(AISLE_KEY,placements[AISLE_KEY]);
+    }else{
+      cacheSeating();
+    }
+
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
   },(e)=>{
     console.error(e);
@@ -326,11 +337,13 @@ function renderPlacements(){
         b.onclick=e=>{e.stopPropagation();rotateTable(k,d)};
         el.appendChild(b);
       });
-      const d=document.createElement("div");
-      d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
-      d.onpointerdown=e=>e.stopPropagation();
-      d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
-      el.appendChild(d);
+      if(!aisle){
+        const d=document.createElement("div");
+        d.className="box-ctrl box-delete";d.textContent="✕";d.style.right="-10px";d.style.top=btnOffset+"px";
+        d.onpointerdown=e=>e.stopPropagation();
+        d.onclick=e=>{e.stopPropagation();removeTableFromMap(k)};
+        el.appendChild(d);
+      }
     }
     floorPlan.appendChild(el);
   });
@@ -450,8 +463,7 @@ async function assignCircleSlot(i,k){
   }
 }
 
-function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!placements[AISLE_KEY]}
-async function addAisleToMap(){ ensureAislePlacement(); renderCurrentView(); }
+
 
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
 modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});
