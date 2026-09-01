@@ -23,15 +23,68 @@ const defaultTables={};
 let currentData={},placements={},circleSlots={},isUnlocked=false,currentView="search",dragState=null,danceGeo={cx:0,cy:0,r:0};const CIRCLE_SLOTS_COUNT=15,AISLE_KEY="__AISLE__",ROTATE_STEP=5;
 const $=id=>document.getElementById(id),resultsDiv=$("results"),totalCountEl=$("total-count"),totalTablesCountEl=$("total-tables-count"),searchInput=$("search"),statusEl=$("save-status"),lockBtn=$("lock-btn"),adminPanel=$("admin-panel"),searchView=$("search-view"),seatingView=$("seating-view"),seatingToolbar=$("seating-toolbar"),chartBtn=$("chart-btn"),floorPlan=$("floor-plan"),floorSvg=$("floor-svg"),danceLabel=$("dance-label"),modalOverlay=$("modal-overlay"),modalBox=$("modal-box");
 
-// === حفظ جزئي: يحدّث الحقل المطلوب بس داخل وثيقة الخريطة، بدون ما يلمس باقي الحقول ===
-// هيك لو جهازين فتحوا الصفحة بنفس الوقت، تعديل كل واحد فيهن بيضل محفوظ ومابيمسح تعديل التاني
-async function saveSeatingField(fieldPath, value) {
-  try {
-    await seatingRef.set({ [fieldPath]: value }, { merge: true });
-  } catch (e) {
+// === حفظ آمن للخريطة ===
+// كل تعديل على الخريطة يُحفظ داخل Transaction بعد قراءة آخر نسخة من Firebase.
+// لا نستبدل وثيقة seating-layout كاملة، ولا نحذف أي طاولة أو ممر تلقائياً.
+async function savePlacement(key, patch){
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      const d=snap.exists?snap.data():{};
+      const remote=d.placements&&typeof d.placements==="object"?d.placements:{};
+      const next={...remote};
+      const old=next[key]&&typeof next[key]==="object"?next[key]:{};
+      next[key]={...old,...patch};
+      tx.set(seatingRef,{placements:next},{merge:true});
+      placements=next;
+    });
+    return true;
+  }catch(e){
     console.error(e);
-    statusEl.textContent = "⚠ فشل الحفظ";
-    setTimeout(() => (statusEl.textContent = ""), 2000);
+    statusEl.textContent="⚠ فشل حفظ الخريطة";
+    setTimeout(()=>statusEl.textContent="",2500);
+    return false;
+  }
+}
+
+async function deletePlacement(key){
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      const d=snap.exists?snap.data():{};
+      const remote=d.placements&&typeof d.placements==="object"?d.placements:{};
+      const next={...remote};
+      delete next[key];
+      tx.set(seatingRef,{placements:next},{merge:true});
+      placements=next;
+    });
+    return true;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent="⚠ فشل حفظ الخريطة";
+    setTimeout(()=>statusEl.textContent="",2500);
+    return false;
+  }
+}
+
+async function saveCircleSlot(i,value,remove=false){
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(seatingRef);
+      const d=snap.exists?snap.data():{};
+      const remote=d.circleSlots&&typeof d.circleSlots==="object"?d.circleSlots:{};
+      const next={...remote};
+      if(remove) delete next[String(i)];
+      else next[String(i)]=value;
+      tx.set(seatingRef,{circleSlots:next},{merge:true});
+      circleSlots=next;
+    });
+    return true;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent="⚠ فشل حفظ الخريطة";
+    setTimeout(()=>statusEl.textContent="",2500);
+    return false;
   }
 }
 
@@ -205,10 +258,10 @@ async function renameTable(old){
     const rebuilt={};Object.keys(currentData).forEach(k=>rebuilt[k===old?x:k]=currentData[k]);currentData=rebuilt;
     if(placements[old]){
       placements[x]=placements[old];delete placements[old];
-      await saveSeatingField(`placements.${old}`,FieldValue.delete());
-      await saveSeatingField(`placements.${x}`,placements[x]);
+      await deletePlacement(old);
+      await savePlacement(x,placements[x]);
     }
-    Object.keys(circleSlots).forEach(async i=>{if(circleSlots[i]===old){circleSlots[i]=x;await saveSeatingField(`circleSlots.${i}`,x)}});
+    for(const i of Object.keys(circleSlots)){if(circleSlots[i]===old){circleSlots[i]=x;await saveCircleSlot(i,x,false)}}
     renderCurrentView();
   }catch(e){console.error(e);alert("لم يتم تغيير اسم الطاولة. البيانات بقيت محفوظة.");}
 }
@@ -282,8 +335,7 @@ async function onBoxPointerUp(){
   if(s.currentX!==undefined){
     placements[s.tableKey].x=s.currentX;
     placements[s.tableKey].y=s.currentY;
-    await saveSeatingField(`placements.${s.tableKey}.x`,s.currentX);
-    await saveSeatingField(`placements.${s.tableKey}.y`,s.currentY);
+    await savePlacement(s.tableKey,{x:s.currentX,y:s.currentY});
   }
   dragState=null;
   if(currentView==="seating"){renderCircleSlots();renderPlacements()}
@@ -291,14 +343,14 @@ async function onBoxPointerUp(){
 async function rotateTable(k,d){
   const newRot=(((placements[k].rot||0)+d)%360+360)%360;
   placements[k].rot=newRot;
-  await saveSeatingField(`placements.${k}.rot`,newRot);
+  await savePlacement(k,{rot:newRot});
   renderPlacements();
 }
 async function removeTableFromMap(k){
   const label=k===AISLE_KEY?"ممر العروسين":k;
   if(!confirm(`متأكد إنك بدك تشيل "${label}" من الخريطة؟`))return;
   delete placements[k];
-  await saveSeatingField(`placements.${k}`,FieldValue.delete());
+  await deletePlacement(k);
   renderPlacements();
 }
 
@@ -312,7 +364,7 @@ function openAddTableToMap(){
 }
 async function addTableToMap(k){
   placements[k]={x:75,y:50,rot:0};
-  await saveSeatingField(`placements.${k}`,placements[k]);
+  await savePlacement(k,placements[k]);
   closeModal();
   renderPlacements();
 }
@@ -360,10 +412,10 @@ function openCircleSlotPicker(i){
 async function assignCircleSlot(i,k){
   if(k===null){
     delete circleSlots[i];
-    await saveSeatingField(`circleSlots.${i}`,FieldValue.delete());
+    await saveCircleSlot(i,null,true);
   }else{
     circleSlots[i]=k;
-    await saveSeatingField(`circleSlots.${i}`,k);
+    await saveCircleSlot(i,k,false);
   }
   closeModal();
   renderCircleSlots();
@@ -373,7 +425,7 @@ function updateAisleButtonState(){const b=$("add-aisle-btn");if(b)b.disabled=!!p
 async function addAisleToMap(){
   if(!isUnlocked||placements[AISLE_KEY])return;
   placements[AISLE_KEY]={x:50,y:15,rot:0};
-  await saveSeatingField(`placements.${AISLE_KEY}`,placements[AISLE_KEY]);
+  await savePlacement(AISLE_KEY,placements[AISLE_KEY]);
   renderPlacements();
 }
 
