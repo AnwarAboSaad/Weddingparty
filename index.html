@@ -54,47 +54,53 @@ function loadSeatingCache(){
 // مهم جداً: لا نكتب نسخة محلية قديمة فوق النسخة الموجودة على Firebase.
 async function savePlacement(key,patch){
   const k=String(key);
-  // حدّث الشاشة والنسخة المحلية فوراً، وسجّل التعديل المعلّق حتى لا يعيده Snapshot قديم.
-  placements[k]={...(placements[k]||{}),...patch};
+  const previous={...(placements[k]||{})};
+  placements[k]={...previous,...patch};
   cacheSeating();
   pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
   try{
-    // نقرأ آخر نسخة من الوثيقة داخل Transaction ثم ندمج العنصر المعدّل فقط.
-    // بهذه الطريقة يعمل الحفظ حتى لو كانت وثيقة seating-layout غير موجودة بعد،
-    // ولا يمكن أن نمسح بقية الطاولات/العناصر بسبب نسخة محلية قديمة.
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      const data=snap.exists?snap.data():{};
-      const remote=data&&data.placements&&typeof data.placements==="object"?data.placements:{};
-      const mergedPlacement={...(remote[k]||{}),...patch};
-      const mergedPlacements={...remote,[k]:mergedPlacement};
-      tx.set(seatingRef,{placements:mergedPlacements},{merge:true});
-    });
+    // لا نستخدم Transaction هنا: تحريك العناصر على الهاتف يجب أن يُحفظ
+    // حتى لو كان Firestore غير متاح لحظياً. set(..., {merge:true}) يسمح
+    // أيضاً بإنشاء وثيقة seating-layout إذا لم تكن موجودة، مع الحفاظ على
+    // جميع عناصر placements الأخرى.
+    await seatingRef.set({
+      placements:{[k]:placements[k]}
+    },{mergeFields:[new firebase.firestore.FieldPath("placements",k)]});
+
     delete pendingPlacementWrites[k];
-    placements[k]={...(placements[k]||{}),...patch};
     cacheSeating();
     statusEl.textContent="✓ تم حفظ التعديل على Firebase";
     setTimeout(()=>{if(statusEl.textContent==="✓ تم حفظ التعديل على Firebase")statusEl.textContent=""},1500);
     return true;
   }catch(e){
     console.error("savePlacement failed",e);
-    // يبقى التعديل محلياً ولا نعيد العنصر للمكان القديم.
+    // لا نرجع العنصر للمكان القديم. يبقى محلياً حتى تنجح المزامنة لاحقاً.
+    pendingPlacementWrites[k]={...(pendingPlacementWrites[k]||{}),...patch};
     cacheSeating();
     statusEl.textContent="⚠ تعذر الحفظ على Firebase — التعديل محفوظ محلياً";
     return false;
   }
 }
+async function syncPendingPlacements(){
+  const keys=Object.keys(pendingPlacementWrites);
+  for(const k of keys){
+    const p=placements[k];
+    if(!p)continue;
+    try{
+      await seatingRef.set({placements:{[k]:p}},{mergeFields:[new firebase.firestore.FieldPath("placements",k)]});
+      delete pendingPlacementWrites[k];
+    }catch(e){
+      console.warn("pending placement sync failed",k,e);
+    }
+  }
+  cacheSeating();
+}
+
 async function deletePlacement(key){
   const k=String(key);
   try{
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(seatingRef);
-      if(!snap.exists)return;
-      const data=snap.data()||{};
-      const remote=data.placements&&typeof data.placements==="object"?{...data.placements}:{};
-      if(Object.prototype.hasOwnProperty.call(remote,k))delete remote[k];
-      tx.set(seatingRef,{placements:remote},{merge:true});
-    });
+    // حذف العنصر المحدد فقط باستخدام FieldPath، بدون إعادة كتابة باقي الخريطة.
+    await seatingRef.update(new firebase.firestore.FieldPath("placements",k),FieldValue.delete());
     delete placements[k];
     delete pendingPlacementWrites[k];
     cacheSeating();
@@ -162,10 +168,11 @@ function startListening(){
     if(Object.prototype.hasOwnProperty.call(d,"placements") && d.placements && typeof d.placements==="object"){
       const remote=d.placements;
       // لا تسمح لـ snapshot قديم أن يعيد عنصراً تم تحريكه للتو إلى مكانه السابق.
-      placements={...remote};
+      const merged={...remote};
       Object.keys(pendingPlacementWrites).forEach(k=>{
-        placements[k]={...(placements[k]||{}),...pendingPlacementWrites[k]};
+        merged[k]={...(merged[k]||{}),...pendingPlacementWrites[k]};
       });
+      placements=merged;
     }
     if(Object.prototype.hasOwnProperty.call(d,"circleSlots") && d.circleSlots && typeof d.circleSlots==="object"){
       circleSlots=d.circleSlots;
@@ -486,5 +493,6 @@ async function addAisleToMap(){
 
 function closeModal(){modalOverlay.style.display="none";modalBox.innerHTML=""}
 modalOverlay.addEventListener("click",e=>{if(e.target===modalOverlay)closeModal()});
+window.addEventListener("online",()=>{syncPendingPlacements();});
 startListening();
 </script></body></html>
