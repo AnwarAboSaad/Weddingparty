@@ -154,6 +154,16 @@ function startListening(){
     }
     cacheSeating();
 
+    // إنشاء الممر تلقائياً لو مش موجود - مرة وحدة بس بكل جلسة، منشان ما نعيد الكتابة فوق تعديلات المستخدم لاحقاً
+    if(!aisleAutoCreateDone){
+      aisleAutoCreateDone=true;
+      if(!placements[AISLE_KEY]){
+        savePlacement(AISLE_KEY,{x:50,y:15,rot:0}).then(ok=>{
+          if(ok&&currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
+        });
+      }
+    }
+
     if(currentView==="seating"&&!dragState){renderCircleSlots();renderPlacements()}
   },(e)=>{
     console.error(e);
@@ -163,32 +173,6 @@ function startListening(){
 
 // حفظ آمن: لا يستبدل خريطة tables كاملة، ولا يسمح بكتابة {} فوق بيانات موجودة.
 // merge=true يحافظ على الحقول الأخرى الموجودة في المستند.
-async function saveData(){
-  if(!Object.keys(currentData).length){
-    console.warn("Blocked empty save to protect Firestore data.");
-
-    return false;
-  }
-  try{
-
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(tablesRef);
-      const remote=snap.exists&&snap.data().tables&&typeof snap.data().tables==="object"?snap.data().tables:{};
-      if(Object.keys(remote).length>0 && Object.keys(currentData).length===0){
-        throw new Error("EMPTY_SAVE_BLOCKED");
-      }
-      // ندمج الجداول الحالية بدلاً من استبدال tables بالكامل.
-      tx.set(tablesRef,{tables:currentData},{merge:true});
-    });
-
-    return true;
-  }catch(e){
-    console.error(e);
-
-    return false;
-  }
-}
-
 // حذف طاولة فقط عند طلب المستخدم صراحةً. لا يوجد حذف تلقائي بسبب القراءة أو الاتصال.
 async function deleteTableSafely(t){
   try{
@@ -270,10 +254,42 @@ function renderTables(filter){resultsDiv.innerHTML="";let found=false;sortedTabl
 function updateTotalCount(){totalCountEl.textContent=`إجمالي عدد الأشخاص: ${Object.values(currentData).reduce((s,t)=>s+(typeof t.count==="number"?t.count:0),0)}`;totalTablesCountEl.textContent=`إجمالي عدد الطاولات: ${Object.values(currentData).reduce((s,t)=>s+(typeof t.tablesCount==="number"?t.tablesCount:0),0)}`}
 
 searchInput.addEventListener("input",function(){renderTables(this.value.trim()||null)});
-async function addTable(){const a=$("new-table-num"),b=$("new-table-names"),num=a.value.trim();if(!num||currentData[num])return alert("اسم الطاولة فارغ أو مستخدم مسبقاً");currentData[num]={count:null,tablesCount:null,names:b.value.trim()?b.value.split(".").map(x=>x.trim()).filter(Boolean):[]};a.value=b.value="";await saveData()}
+async function addTable(){
+  const a=$("new-table-num"),b=$("new-table-names"),num=a.value.trim();
+  if(!num)return alert("لازم تكتب اسم الطاولة");
+  const names=b.value.trim()?b.value.split(".").map(x=>x.trim()).filter(Boolean):[];
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(tablesRef);
+      const remote=snap.exists&&snap.data().tables&&typeof snap.data().tables==="object"?snap.data().tables:{};
+      if(remote[num])throw new Error("TABLE_EXISTS");
+      tx.set(tablesRef,{tables:{[num]:{count:null,tablesCount:null,names}}},{merge:true});
+    });
+    currentData[num]={count:null,tablesCount:null,names};
+    a.value=b.value="";
+    renderCurrentView();
+  }catch(e){
+    if(e.message==="TABLE_EXISTS")alert("اسم الطاولة مستخدم مسبقاً");
+    else{console.error(e);alert("لم تتم إضافة الطاولة. حاول تاني.");}
+  }
+}
 async function deleteTable(t){if(confirm(`متأكد من حذف الطاولة "${t}"؟\nلن يتم حذف أي بيانات أخرى.`)){if(await deleteTableSafely(t)){delete currentData[t];renderCurrentView()}}}
-async function updateTableCount(t,v){currentData[t].count=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
-async function updateTableTablesCount(t,v){currentData[t].tablesCount=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);await saveData()}
+async function updateTableCount(t,v){
+  const val=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);
+  try{
+    await tablesRef.update(new firebase.firestore.FieldPath("tables",String(t),"count"),val);
+    currentData[t].count=val;
+    renderCurrentView();
+  }catch(e){console.error(e);alert("لم يتم حفظ العدد. تأكد من الاتصال بالنت وحاول تاني.");}
+}
+async function updateTableTablesCount(t,v){
+  const val=v.trim()===""?null:Math.max(0,parseInt(v,10)||0);
+  try{
+    await tablesRef.update(new firebase.firestore.FieldPath("tables",String(t),"tablesCount"),val);
+    currentData[t].tablesCount=val;
+    renderCurrentView();
+  }catch(e){console.error(e);alert("لم يتم حفظ العدد. تأكد من الاتصال بالنت وحاول تاني.");}
+}
 async function renameTable(old){
   const n=prompt("اسم الطاولة الجديد:",old);if(n===null)return;
   const x=n.trim();if(!x||x===old)return;
@@ -300,8 +316,23 @@ async function renameTable(old){
   }catch(e){console.error(e);alert("لم يتم تغيير اسم الطاولة. البيانات بقيت محفوظة.");}
 }
 
-async function addGuest(t){const i=$(`add-guest-${t}`),n=i.value.trim();if(n){currentData[t].names.push(n);await saveData()}}
-async function deleteGuest(t,n){currentData[t].names=currentData[t].names.filter(x=>x!==n);await saveData()}
+async function addGuest(t){
+  const i=$(`add-guest-${t}`),n=i.value.trim();
+  if(!n)return;
+  try{
+    await tablesRef.update(new firebase.firestore.FieldPath("tables",String(t),"names"),FieldValue.arrayUnion(n));
+    if(!currentData[t].names.includes(n))currentData[t].names.push(n);
+    i.value="";
+    renderCurrentView();
+  }catch(e){console.error(e);alert("لم تتم إضافة المعزوم. تأكد من الاتصال بالنت وحاول تاني.");}
+}
+async function deleteGuest(t,n){
+  try{
+    await tablesRef.update(new firebase.firestore.FieldPath("tables",String(t),"names"),FieldValue.arrayRemove(n));
+    currentData[t].names=currentData[t].names.filter(x=>x!==n);
+    renderCurrentView();
+  }catch(e){console.error(e);alert("لم يتم حذف المعزوم. تأكد من الاتصال بالنت وحاول تاني.");}
+}
 
 function computeLength(k){if(k===AISLE_KEY)return 200;if(!currentData[k])return 60;return Math.min(40+(currentData[k].count||0)*4,300)}
 
